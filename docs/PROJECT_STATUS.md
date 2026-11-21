@@ -204,13 +204,13 @@
 - Bundle call sites confirm `NewmanViewManager.sendQuery(text, boolean)`, `onUserManualInput()` with no arguments as a text-input-focus notification, `cancelListening()`, `resetConversation()`, and a limited `forceResetConnection()` path.
 - Corrected the adapter contract: manual-input focus is a no-op UI hook, not a query submission API.
 - Bundle uses React Native NativeEventEmitter for Newman commute/CSDK state, query-text, response and error events. The MVP will not recreate unused commute/skill events.
-- Inventory found 48 persona PERS assets (24 circle + 24 miantuan), 2,502,596 bytes total. Full decode/state mapping remains pending.
+- Inventory found 48 persona PERS assets (23 circle + 25 miantuan), 2,502,596 bytes total. GIF payloads/frame counts are decoded and validated; runtime state mapping remains pending.
 - Exact React Native version remains unpinned; JSC/legacy bridge evidence is insufficient to select a Maven artifact.
 - Three code commits correct the no-argument focus hook in LegacyConversationAdapter, its test, and AndroidBridgeRuntime. CI status must be checked before calling this change validated.
 
 ### Stage 004V-6 — full persona PERS inventory decoded (2026-11-21)
 
-- Parsed all 48 PERS containers from the immutable reference APK (24 circle + 24 miantuan).
+- Parsed all 48 PERS containers from the immutable reference APK (23 circle + 25 miantuan).
 - Decoded embedded GIF payloads and verified all XML-declared frame counts against actual GIF frame counts: 1,846 total frames.
 - Container bytes total 2,502,596; source GIF canvases are 100×116, 214×249 and 428×500.
 - Added metadata-only inventory at `docs/legacy/CORTANA_PERSONA_ASSET_INVENTORY.md`; no extracted GIF payloads or APK binaries were committed.
