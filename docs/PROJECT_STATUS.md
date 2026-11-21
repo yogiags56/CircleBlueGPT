@@ -197,3 +197,13 @@
 5. Implement a narrow legacy conversation adapter matching NewmanViewModule text-query semantics and map validated GPT text into `view.displayText`.
 6. Add deterministic adapter tests for text submission, reset/cancel, duplicate events and unsupported legacy skills.
 7. Integrate the original Cortana UI/persona only after backend and bridge gates pass.
+
+### Stage 004V-6 — APK call-site audit refinement (2026-11-21)
+
+- Re-inspected the supplied immutable Cortana 3.3.3.2876 APK; SHA-256 matches the recorded baseline.
+- Bundle call sites confirm `NewmanViewManager.sendQuery(text, boolean)`, `onUserManualInput()` with no arguments as a text-input-focus notification, `cancelListening()`, `resetConversation()`, and a limited `forceResetConnection()` path.
+- Corrected the adapter contract: manual-input focus is a no-op UI hook, not a query submission API.
+- Bundle uses React Native NativeEventEmitter for Newman commute/CSDK state, query-text, response and error events. The MVP will not recreate unused commute/skill events.
+- Inventory found 48 persona PERS assets (24 circle + 24 miantuan), 2,502,596 bytes total. Full decode/state mapping remains pending.
+- Exact React Native version remains unpinned; JSC/legacy bridge evidence is insufficient to select a Maven artifact.
+- Three code commits correct the no-argument focus hook in LegacyConversationAdapter, its test, and AndroidBridgeRuntime. CI status must be checked before calling this change validated.
