@@ -24,6 +24,7 @@
 - Platform-neutral BridgeCore and AES-GCM codec prototypes exist in the recovery workspace.
 - Java HTTP transport prototype uses HTTPS in production mode, bounded response parsing, request IDs, idempotency headers, bounded retries and best-effort server cancellation.
 - Android probe project is now committed under `android/probe/`, including the Gradle project, manifest, API 23+ Android Keystore AES-GCM token store and instrumentation test source.
+- GitHub Actions Android build workflow has been added to install JDK 17, Gradle 8.9 and API 35 SDK, then compile the app and instrumentation APK. First CI execution is pending.
 - API 19–22 persistent sensitive storage is intentionally unsupported in this prototype; no plaintext or weak-key fallback is provided.
 
 ## Stage 004R test observation
@@ -49,7 +50,7 @@ The JVM test sources and this test-harness correction are still in the recovery 
 
 - OpenJDK 21.0.12.1 is present.
 - `gradle`, `adb`, Android SDK environment variables, `android.jar` and `sdkmanager` are absent.
-- Therefore the Android Gradle project cannot currently be built here. The committed probe uses Android Gradle Plugin 8.7.3 and Java 8 source compatibility. Android's official build documentation lists JDK 17 as the minimum runtime for AGP 8.x; the available JDK 21 satisfies that JDK baseline, but Gradle and Android SDK are still missing.
+- Therefore the Android Gradle project cannot currently be built in this workspace. The committed probe uses Android Gradle Plugin 8.7.3, Gradle 8.9 and Java 8 source compatibility. Android's official compatibility table confirms AGP 8.7 requires Gradle 8.9, and AGP 8.x requires JDK 17; the available JDK 21 satisfies the JDK baseline, but Gradle and Android SDK are still missing.
 
 ## Stage 004R objectives
 
