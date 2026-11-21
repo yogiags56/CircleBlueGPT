@@ -185,3 +185,7 @@ Workflow run #15 (`44934215889`) failed in `android-actions/setup-android@v4` be
 ## RN 0.59.4 shell CI iteration 2 — Metro Babel preset (2026-11-22)
 
 Workflow run #20 (`44934341325`) passed JDK17 Android SDK setup, Android SDK 28 packages, JDK8 switch and npm install. Metro bundle step failed while parsing Flow syntax in RN `Libraries/Blob/URL.js` (unexpected punctuation token). Added `android/rn0594-compat/.babelrc` with `module:metro-react-native-babel-preset` to activate the RN-era Flow/Babel transform. Await next run; no APK compiled or emulator tests performed yet.
+
+## RN 0.59.4 shell CI iteration 3 — Babel dependency pin (2026-11-22)
+
+Workflow run #24 (`44934502675`) passed SDK/JDK setup and npm install, but Metro still failed parsing Flow syntax in `Libraries/Blob/URL.js`. The failure pattern matches the known Metro preset / Babel traversal regression (Flow parameter annotations fail when old preset resolves newer Babel traversal). Migrated CI dependency installation to Yarn 1.22.22 and added package resolutions: `@babel/core 7.16.5`, `@babel/preset-flow 7.16.5`, `@babel/runtime 7.16.5`, `@babel/traverse 7.16.7`. Added documentation requiring generated `yarn.lock` to be committed after a successful resolution. Next CI must confirm bundle success; Gradle and emulator stages have not run.
