@@ -90,3 +90,19 @@ CI history:
 
 
 **Transport test boundary:** the current JVM transport tests inject a fake `HttpsURLConnection`. They validate request configuration, bounds, parsing, errors and cancellation, but they do not establish a real TLS socket handshake or end-to-end HTTP server interoperability. Stage 004V-3B must add a local HTTPS mock-server suite before claiming real mock-server integration.
+
+## Stage 004V-3B — real local HTTPS mock-server suite (CI pending)
+
+A separate `ChatHttpGatewayTlsIntegrationTest` uses OkHttp MockWebServer with a generated local certificate. The test client explicitly trusts only that certificate; this trust configuration exists only in test code and does not alter the production/default HTTPS factory.
+
+Coverage:
+- Real TLS handshake and v1 POST round-trip, including path, headers and body.
+- Redirect response is rejected and not followed.
+- HTTP 503 maps to a generic failure.
+- Delayed body triggers the configured read timeout.
+- Oversized response body is rejected.
+- Cancellation during an in-flight response read suppresses late callbacks.
+- Platform default trust store rejects the self-signed test certificate when the test-only trust factory is not supplied.
+
+Android run #167 (`44902414304`) passed 44 host-JVM tests and APK assembly; API 35 emulator instrumentation is still running. Do not mark this stage complete until the workflow is fully green.
+
