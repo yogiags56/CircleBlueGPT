@@ -104,5 +104,7 @@ Coverage:
 - Cancellation during an in-flight response read suppresses late callbacks.
 - Platform default trust store rejects the self-signed test certificate when the test-only trust factory is not supplied.
 
-Android run #167 (`44902414304`) passed 44 host-JVM tests and APK assembly; API 35 emulator instrumentation is still running. Do not mark this stage complete until the workflow is fully green.
+Android run #167 (`44902414304`) completed successfully: 44/44 host-JVM tests, APK assembly and 5/5 API 35 emulator instrumentation tests passed. Artifact #14706248982 was downloaded and ZIP/APK hashes and integrity verified. Stage 004V-3B is complete.
 
+
+**Next stage (004V-3C):** add API 35 Android instrumentation that exercises the actual `ChatHttpGateway` over a local HTTPS MockWebServer using test-only trust. The current real-TLS tests run on the host JVM; Android runtime HTTPS interoperability remains unverified.
