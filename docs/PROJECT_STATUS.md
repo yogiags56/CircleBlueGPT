@@ -242,3 +242,14 @@
 - Artifact #14710076733 (`cortanagpt-probe-apks.zip`) uploaded; ZIP SHA-256 `03cfc5d97179712845c99a4e78602df3b27ec7c8b3fb6f941809f6d3d29db1ad`.
 - Backend run #240 (`44911443976`) also completed successfully.
 - This validates the metadata catalog and corrected 23/25 family counts. It does not validate the separate RN 0.59.4 compatibility shell, which has not yet been created.
+
+### Stage 004V-7 — isolated React Native 0.59.4 compatibility shell (2026-11-22)
+
+- Added `android/rn0594-compat/`, separate from the modern AGP 8.7.3 / compileSdk 35 probe.
+- Direct JavaScript dependencies are pinned to React 16.8.3 and React Native 0.59.4. Android build target is AGP 3.3.1, Gradle 4.10.1, compileSdk/build-tools 28, minSdk 19, targetSdk 28, JDK 8.
+- Added ReactActivity/ReactNativeHost bootstrap and a legacy ReactPackage with a no-op `ReactContextBaseJavaModule`.
+- Probe exposes Promise resolve/reject and DeviceEventManagerModule event delivery. JS checks native `PlatformConstants.reactNativeVersion` for exact 0.59.4 parity.
+- Added `.github/workflows/rn0594-compat.yml` to install JS dependencies, generate a bundle, assemble APK and launch on API 28 emulator; CI requires version parity, Promise resolve/reject and event delivery markers.
+- Corrected package API to the post-0.47 ReactPackage contract (no `createJSModules()` method).
+- This is a scaffold only: no Actions result has yet been observed for the new workflow, and no local build has been run. Transitive npm dependencies are not yet captured in a committed lockfile; lockfile/reproducibility hardening remains open.
+- Do not call RN 0.59.4 native parity or NativeModule integration validated until the API 28 emulator workflow passes.
