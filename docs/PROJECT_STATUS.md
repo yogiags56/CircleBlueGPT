@@ -26,8 +26,8 @@
 - Session destruction deletes the Android Keystore alias and clears encrypted token preferences.
 - A pure-Java compatibility policy is covered by host-JVM unit tests for API 19, 22, 23 and 35. These tests verify the policy boundary; they are not a substitute for running Android on API 19–22.
 - Android instrumentation tests exercise ciphertext round-trip, key-deletion invalidation and session destruction on API 35.
-- Latest Android probe workflow run `44893660206` completed successfully: host-JVM API policy tests, APK assembly, and all 3 API 35 emulator instrumentation tests passed.
-- Latest probe artifact ID `14703565424`; ZIP SHA-256 `72c88f64d0195f8cb2d10659d1f12a24697a3889c403fca4ba88c534f3bd6c28`. ZIP integrity verified; app APK 11,273 bytes and instrumentation APK 1,679,113 bytes.
+- Latest Android probe workflow run `44894581676` completed successfully: host-JVM API policy tests, APK assembly, and all 3 API 35 emulator instrumentation tests passed.
+- Latest probe artifact ID `14703004994`; ZIP SHA-256 `aff277847cd34bffe6d7d246538b8b9adebfa8f81d50ead07a4bb0189ac9e330`. ZIP integrity verified; app APK 11,274 bytes and instrumentation APK 1,679,116 bytes.
 
 ## Stage 004S CI evidence
 
@@ -85,6 +85,6 @@
 
 1. Review the proposed Stage 004T protocol and threat model; obtain independent cryptographic review before implementation.
 2. Promote and validate the platform-neutral BridgeCore, AES-GCM codec and HTTP transport source/tests from the recovery workspace when the exact files are available.
-3. Obtain independent cryptographic review of the session proof protocol; only then compose the tested challenge, P-256, replay and token primitives into enrollment/session endpoints. The Android workflow for the latest backend/security changes is still running; do not infer an APK result from backend CI.
+3. Run backend CI for the new session-token repository, then obtain independent cryptographic review of the session proof protocol before composing the tested challenge, P-256, replay and token primitives into enrollment/session endpoints.
 4. Build the Android–GPT transport bridge against a mock backend.
 5. Integrate the original Cortana UI/persona only after backend and bridge gates pass.
