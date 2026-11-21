@@ -85,6 +85,8 @@ HTTP gateway:
 CI history:
 - First Android run #152 (`44901611627`) failed 1/37 JVM tests: the strict parser classified a second top-level JSON value as malformed instead of the explicit trailing-data code.
 - Parser handling was corrected in commit `6e46c5a0d2b5c0ab3eac851d74720e9c7c70f30b`.
-- Corrected Android run #154 (`44901777496`) is currently validating the updated tests and API 35 emulator. The host-JVM task and APK assembly have passed; emulator instrumentation is still running at this checkpoint.
+- Corrected Android run #154 (`44901777496`) completed successfully: 37/37 host-JVM tests, APK assembly and 5/5 API 35 emulator instrumentation tests passed. Artifact #14706586070 was downloaded and ZIP/APK hashes and archive integrity verified.
 - Backend run #142 (`44901777488`) passed typecheck/build, migration idempotency and integration test steps.
 
+
+**Transport test boundary:** the current JVM transport tests inject a fake `HttpsURLConnection`. They validate request configuration, bounds, parsing, errors and cancellation, but they do not establish a real TLS socket handshake or end-to-end HTTP server interoperability. Stage 004V-3B must add a local HTTPS mock-server suite before claiming real mock-server integration.
