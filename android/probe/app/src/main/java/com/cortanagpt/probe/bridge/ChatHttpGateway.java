@@ -10,7 +10,7 @@ import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.HttpsURLConnection;
 
 /**
@@ -87,22 +87,26 @@ public final class ChatHttpGateway implements BridgeCore.Gateway {
 
     private final class RequestCall implements BridgeCore.Call {
         private final BridgeCore.Callback callback;
-        private final AtomicBoolean cancelled = new AtomicBoolean(false);
-        private final AtomicBoolean completed = new AtomicBoolean(false);
+        private static final int ACTIVE = 0;
+        private static final int CANCELLED = 1;
+        private static final int COMPLETED = 2;
+        private final AtomicInteger lifecycle = new AtomicInteger(ACTIVE);
         private volatile HttpsURLConnection connection;
 
         RequestCall(BridgeCore.Callback callback) { this.callback = callback; }
 
         @Override public void cancel() {
-            cancelled.set(true);
+            if (!lifecycle.compareAndSet(ACTIVE, CANCELLED)) return;
             HttpsURLConnection current = connection;
             if (current != null) {
                 try { current.disconnect(); } catch (RuntimeException ignored) { }
             }
         }
 
+        private boolean isCancelled() { return lifecycle.get() == CANCELLED; }
+
         void perform(ChatRequest request) {
-            if (cancelled.get()) return;
+            if (isCancelled()) return;
             HttpsURLConnection current = null;
             try {
                 byte[] requestBody = codec.encodeRequest(request).getBytes(StandardCharsets.UTF_8);
@@ -111,7 +115,7 @@ public final class ChatHttpGateway implements BridgeCore.Gateway {
                 current = connectionFactory.open(endpoint);
                 if (current == null) throw new IOException("CONNECTION_UNAVAILABLE");
                 connection = current;
-                if (cancelled.get()) return;
+                if (isCancelled()) return;
 
                 current.setRequestMethod("POST");
                 current.setDoInput(true);
@@ -129,7 +133,7 @@ public final class ChatHttpGateway implements BridgeCore.Gateway {
                     output.write(requestBody);
                     output.flush();
                 }
-                if (cancelled.get()) return;
+                if (isCancelled()) return;
 
                 int status = current.getResponseCode();
                 if (status < 200 || status >= 300) throw new IOException("HTTP_STATUS_REJECTED");
@@ -141,7 +145,7 @@ public final class ChatHttpGateway implements BridgeCore.Gateway {
                 try (InputStream input = current.getInputStream()) {
                     responseBody = readBounded(input, ChatProtocolCodec.MAX_RESPONSE_BYTES);
                 }
-                if (cancelled.get()) return;
+                if (isCancelled()) return;
                 String responseJson = decodeUtf8(responseBody);
                 ChatResponse response = codec.decodeResponse(responseJson, request.getRequestId());
                 succeed(response);
@@ -156,12 +160,12 @@ public final class ChatHttpGateway implements BridgeCore.Gateway {
         }
 
         private void succeed(ChatResponse response) {
-            if (cancelled.get() || !completed.compareAndSet(false, true)) return;
+            if (isCancelled() || !lifecycle.compareAndSet(ACTIVE, COMPLETED)) return;
             try { callback.onSuccess(response); } catch (RuntimeException ignored) { }
         }
 
         private void fail() {
-            if (cancelled.get() || !completed.compareAndSet(false, true)) return;
+            if (isCancelled() || !lifecycle.compareAndSet(ACTIVE, COMPLETED)) return;
             try { callback.onFailure(); } catch (RuntimeException ignored) { }
         }
     }
