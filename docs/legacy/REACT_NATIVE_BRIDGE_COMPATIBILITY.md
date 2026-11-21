@@ -1,6 +1,6 @@
 # Cortana React Native bridge compatibility audit
 
-**Status:** static APK audit completed; exact React Native release is not yet pinned. No NativeModule has been compiled or loaded into the original Cortana runtime.
+**Status:** static APK audit completed; the embedded JavaScript package version is pinned to React Native 0.59.4. An isolated compatibility shell is scaffolded, but its native build, version parity and NativeModule behavior remain unvalidated. No NativeModule has been loaded into the original Cortana runtime.
 
 ## 1. APK evidence
 
@@ -26,13 +26,9 @@ A TurboModule-related diagnostic string is also present in DEX, but that alone d
 
 ## 2. Version pinning result
 
-The exact React Native semantic version was not exposed by the APK metadata or the inspected version strings. The APK's Cortana app version (3.3.3.2876) is not the React Native version.
+The embedded JavaScript bundle directly declares React Native **0.59.4** (Metro version object; see `docs/legacy/REACT_NATIVE_RUNTIME_FINGERPRINT.md`). Cortana app version 3.3.3.2876 is not the React Native version. The JS package is pinned; native artifact parity still requires the isolated shell to report `PlatformConstants.reactNativeVersion` as 0.59.4.
 
-Do not guess a `react-android` Maven version or compile a module against an arbitrary React Native release. Before choosing the dependency:
-1. Recover the original Gradle dependency lock/build files if available.
-2. If not, inspect class/method signatures and native library fingerprints against candidate RN artifacts.
-3. Record the selected RN version and the evidence that pins it.
-4. Build and run the isolated shell with that exact version before any original APK patch.
+Do not guess a different `react-android` Maven version. Build and run the isolated shell with the pinned 0.59.4 package before any original APK patch. The shell currently has no committed npm lockfile and has not yet passed CI.
 
 ## 3. NativeModule compatibility direction
 
