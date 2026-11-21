@@ -73,7 +73,8 @@
 - Response DTO accepts only nonempty bounded text and a matching request ID; provider metadata and action/tool payloads are excluded.
 - BridgeCore arbitrates one terminal success/failure/cancellation callback, rejects duplicate active request IDs and ignores late gateway callbacks after cancellation. Gateway is injected; no HTTP/auth/provider endpoint is wired.
 - Eight JVM bridge tests were added for DTO validation, immutable memory, success/failure, mismatched IDs, cancellation races, duplicate IDs, synchronous callbacks and generic error handling.
-- Initial Android CI run `44899084557` found one faulty test fixture: the aggregate-memory test used a single item over the per-item cap. The fixture has been corrected to five 1,700-character items (8,500 total). The corrected CI run is pending; bridge tests are not yet counted as passing.
+- Initial Android CI run `44899084557` exposed a faulty aggregate-memory test fixture (one item exceeded the per-item cap); the fixture was corrected to five individually valid 1,700-character items.
+- Corrected Android run `44899189690` passed the host-JVM unit-test task (4 Keystore policy tests + 8 bridge tests) and APK assembly. API 35 emulator instrumentation is still running; do not count this run as fully green until that step completes.
 - Listener callbacks are not marshalled to Android's main thread; the future Android UI adapter must dispatch them appropriately. No React Native NativeModule, streaming, event buffering, HTTP transport, timeout or production endpoint is implemented.
 
 ## Security and release constraints
