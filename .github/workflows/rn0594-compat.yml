@@ -69,6 +69,12 @@ jobs:
         working-directory: android/rn0594-compat
         run: gradle --no-daemon --stacktrace :app:assembleDebug
 
+      - name: Switch to JDK 17 for emulator and SDK tools
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
       - name: Launch on API 28 emulator and verify bridge
         uses: reactivecircus/android-emulator-runner@v2
         with:
