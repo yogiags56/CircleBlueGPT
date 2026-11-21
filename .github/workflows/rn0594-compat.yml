@@ -73,8 +73,12 @@ jobs:
             adb install android/rn0594-compat/app/build/outputs/apk/debug/app-debug.apk
             adb shell am start -n com.cortanagpt.rn0594compat/.MainActivity
             for i in $(seq 1 60); do
-              if adb logcat -d -s ReactNativeJS:V | grep -q "RN0594_NATIVE_PROMISE_OK:native-module-ready"; then
-                adb logcat -d -s ReactNativeJS:V
+              logs="$(adb logcat -d -s ReactNativeJS:V)"
+              if echo "$logs" | grep -q "RN0594_NATIVE_VERSION_OK" \
+                && echo "$logs" | grep -q "RN0594_NATIVE_PROMISE_OK:native-module-ready" \
+                && echo "$logs" | grep -q "RN0594_NATIVE_PROMISE_REJECT_OK" \
+                && echo "$logs" | grep -q "RN0594_EVENT_OK:event-ready"; then
+                echo "$logs"
                 exit 0
               fi
               sleep 2
