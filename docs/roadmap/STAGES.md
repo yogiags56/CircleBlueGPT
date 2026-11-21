@@ -37,3 +37,5 @@
 - 005: end-to-end MVP only after all preceding gates pass.
 
 - 004V-6A: metadata-only Java catalog added for all 48 original Cortana PERS files, including family/expression token, original GIF dimensions, frame counts and container sizes. Includes immutable lookups and path-traversal rejection plus six JVM tests. No payloads copied; runtime state/transition mapping remains open. Android CI pending.
+
+- 004V-7: isolated RN 0.59.4 Android compatibility shell scaffold committed under `android/rn0594-compat/`. Uses legacy AGP/Gradle/SDK toolchain separately from modern probe; exercises PlatformConstants version parity, NativeModule Promise resolve/reject and event emission. API 28 emulator workflow added; **pending CI validation and transitive dependency lockfile**.
