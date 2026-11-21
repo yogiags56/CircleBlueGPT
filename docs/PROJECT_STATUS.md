@@ -56,9 +56,10 @@
 - Configuration validation, liveness and dependency readiness routes are implemented with dependency injection for tests.
 - PostgreSQL/Redis connection wiring, a proposed initial schema and local Docker Compose services are present.
 - Unit tests cover configuration and health/readiness behavior.
-- Backend CI run #35 completed successfully: strict TypeScript typecheck and production build passed; the transactional PostgreSQL migration applied successfully and a second run correctly reported it already applied.
-- **11/11 automated tests passed**, including live PostgreSQL schema verification and Redis PING against CI service containers.
-- Health route behavior is tested with dependency fakes; real service integration covers database schema visibility and Redis connectivity, not full enrollment/session workflows.
+- Backend CI run #39 completed successfully: strict TypeScript typecheck and production build passed; the transactional PostgreSQL migration applied successfully and a second run correctly reported it already applied.
+- **17/17 automated tests passed** against CI PostgreSQL/Redis services.
+- Integration coverage includes schema verification, Redis PING, idempotency first-write/replay, body-hash conflict, concurrent duplicate requests, stored-response replay and invalid state transitions.
+- This validates the persistence primitive, not a complete chat endpoint or exactly-once external provider execution.
 - No enrollment, session issuance, chat completion, cryptographic proof validation or GPT provider adapter is implemented. The service is not production-ready.
 
 ## Not yet verified
@@ -78,6 +79,6 @@
 
 1. Review the proposed Stage 004T protocol and threat model; obtain independent cryptographic review before implementation.
 2. Promote and validate the platform-neutral BridgeCore, AES-GCM codec and HTTP transport source/tests from the recovery workspace when the exact files are available.
-3. Implement and test enrollment/session issuance, durable replay protection and idempotency against the now-validated PostgreSQL/Redis foundation.
+3. Obtain independent review of the session proof protocol, then implement enrollment/session issuance and connect the tested idempotency repository to a guarded chat orchestration layer.
 4. Build the Android–GPT transport bridge against a mock backend.
 5. Integrate the original Cortana UI/persona only after backend and bridge gates pass.
