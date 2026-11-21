@@ -215,3 +215,13 @@
 - Container bytes total 2,502,596; source GIF canvases are 100×116, 214×249 and 428×500.
 - Added metadata-only inventory at `docs/legacy/CORTANA_PERSONA_ASSET_INVENTORY.md`; no extracted GIF payloads or APK binaries were committed.
 - This complete 48-file inventory supersedes the earlier partial 15-segment/364-frame count as the total APK asset inventory. Persona state/timing/transition mapping is still pending.
+
+### Stage 004V-6A — persona metadata catalog (2026-11-21)
+
+- Added `PersonaAssetCatalog`, a metadata-only Java catalog for all 48 source PERS filenames.
+- Catalog records family (circle/miantuan), filename expression token, original GIF canvas dimensions, frame count and PERS container byte size.
+- Exposes immutable inventory, exact basename lookup, family/expression variant lookup, and aggregate frame/byte counts.
+- Lookup rejects path components; catalog does not load or extract payloads, choose a runtime state, infer animation transitions, or alter the immutable source APK.
+- Added six JVM tests for inventory totals (48 assets, 1,846 frames, 2,502,596 bytes), family counts, exact metadata, greeting variants, path traversal rejection and immutability.
+- CI triggered by the code commits must pass before this slice is considered validated.
+- React Native exact-version pinning remains blocked on original dependency metadata or class/native ABI fingerprinting; do not add an arbitrary RN dependency.
