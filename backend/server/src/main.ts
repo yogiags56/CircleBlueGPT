@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { Pool } from "pg";
 import Redis from "ioredis";
 import { buildApp } from "./app.js";
