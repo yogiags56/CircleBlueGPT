@@ -1,7 +1,7 @@
 import "dotenv/config";
 import test from "node:test";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { Pool } from "pg";
 import { EnrollmentChallengeRepository } from "../src/enrollment/challenge-repository.js";
 
@@ -70,8 +70,7 @@ test("expired enrollment challenge cannot be consumed", async () => {
 
 test("rotation challenge cannot be consumed through enrollment path", async () => {
   const sessionId = randomUUID();
-  const challengeId = randomUUID().replaceAll("-", "").slice(0, 24);
-  const paddedId = Buffer.from(challengeId, "hex").toString("base64url");
+  const paddedId = randomBytes(24).toString("base64url");
   try {
     await pool.query(
       `INSERT INTO installation_sessions
