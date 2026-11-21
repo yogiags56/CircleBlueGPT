@@ -21,10 +21,16 @@ export class ProofReplayStore {
       throw new Error("INVALID_REPLAY_TTL");
     }
 
+    const sessionBytes = Buffer.from(sessionId, "utf8");
+    const proofBytes = Buffer.from(proofJti, "utf8");
+    // Length-prefix both UTF-8 components to make the composite key unambiguous.
     const digest = createHash("sha256")
-      .update(sessionId, "utf8")
-      .update("\\0")
-      .update(proofJti, "utf8")
+      .update(String(sessionBytes.length), "ascii")
+      .update(":")
+      .update(sessionBytes)
+      .update(String(proofBytes.length), "ascii")
+      .update(":")
+      .update(proofBytes)
       .digest("hex");
     const result = await this.redis.set(
       this.prefix + digest,
