@@ -31,7 +31,13 @@ export function validateP256PublicJwk(input: unknown): P256PublicJwk {
   }
   decodeCanonicalBase64Url(value.x, "PUBLIC_KEY_X");
   decodeCanonicalBase64Url(value.y, "PUBLIC_KEY_Y");
-  return { kty: "EC", crv: "P-256", x: value.x, y: value.y };
+  const jwk = { kty: "EC" as const, crv: "P-256" as const, x: value.x, y: value.y };
+  try {
+    createPublicKey({ key: jwk, format: "jwk" });
+  } catch {
+    throw new Error("INVALID_PUBLIC_KEY");
+  }
+  return jwk;
 }
 
 /** RFC 7638 thumbprint for an EC P-256 public JWK. */
