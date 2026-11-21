@@ -31,7 +31,7 @@ public class ChatProtocolCodecTest {
 
     @Test public void rejectsMalformedAndTrailingJson() {
         expectIOException("{not-json}", "MALFORMED_RESPONSE");
-        expectIOException(valid("ok") + " garbage", "TRAILING_RESPONSE_DATA");
+        expectIOException(valid("ok") + "{}", "TRAILING_RESPONSE_DATA");
     }
 
     @Test public void rejectsDuplicateAndUnknownFields() {
