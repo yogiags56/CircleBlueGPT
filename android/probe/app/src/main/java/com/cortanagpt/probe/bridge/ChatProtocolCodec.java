@@ -3,6 +3,8 @@ package com.cortanagpt.probe.bridge;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
+import com.google.gson.stream.MalformedJsonException;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -77,7 +79,7 @@ public final class ChatProtocolCodec {
             }
             reader.endObject();
             if (reader.peek() != JsonToken.END_DOCUMENT) throw new IOException("TRAILING_RESPONSE_DATA");
-        } catch (IllegalStateException | NumberFormatException error) {
+        } catch (MalformedJsonException | EOFException | IllegalStateException | NumberFormatException error) {
             throw new IOException("MALFORMED_RESPONSE");
         }
 
