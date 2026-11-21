@@ -106,3 +106,34 @@ Important correction to the bridge contract: `onUserManualInput()` is a no-argum
 ## 8. Exact-version limitation remains
 
 The bundle evidence confirms the legacy Bridge/JSC architecture but still does not identify an exact React Native semantic version. Do not pin a Maven dependency based on Cortana app version, bundle size, or JSC presence alone. Continue with class/method and native ABI fingerprinting or recover build metadata from a trusted source.
+
+## 9. Re-inspection of the re-uploaded APK — DEX method descriptors (2026-11-21)
+
+The APK was re-opened from the current conversation upload and verified against the project baseline:
+- APK size: 68,915,677 bytes.
+- SHA-256: `c8c3192bc29057dfc398f4cb8fa3bfc549422373e0688a4c6de993f37a233d6c`.
+- DEX files: `classes.dex` (8,936,432 bytes) and `classes2.dex` (3,889,108 bytes).
+- React Native classes are present in DEX, including `ReactContextBaseJavaModule`, `ReactApplicationContext`, `Promise`, `ReactMethod`, `CatalystInstanceImpl`, and the legacy Java bridge APIs.
+- Both ARM64 and ARMv7 contain `libreactnativejni.so`, `libjscexecutor.so`, and `libjsc.so`; neither ABI contains `libhermes.so`.
+
+DEX class-data parsing confirms the exact declared Java method descriptors for `com.microsoft.bing.dss.reactnative.module.NewmanViewModule`:
+
+| Method | DEX descriptor |
+|---|---|
+| Constructor | `(ReactApplicationContext) -> void` |
+| `sendQuery` | `(String, boolean, Promise) -> void` |
+| `onUserManualInput` | `() -> void` |
+| `cancelListening` | `() -> void` |
+| `resetConversation` | `() -> void` |
+| `forceResetConnection` | `() -> void` |
+| `sendSkillEvent` | `(String, String, ReadableMap, boolean, Promise) -> void` |
+| `onAdaptiveCardSubmit` | `(ReadableMap, String) -> void` |
+| `logCardShown` | `(String, String) -> void` |
+
+Important bridge correction/refinement:
+- The native `sendQuery` method is **not** a Java method returning a String. It returns `void` and receives a React Native `Promise` as its third argument. The JavaScript-visible request ID is delivered through Promise resolution.
+- The second argument is a primitive boolean. Its meaning is still unresolved; do not rename it to voice, alternate mode, or any other semantic label until its method body and all JavaScript call sites are traced.
+- The existing platform-neutral adapter may continue returning a request ID internally, but a future RN wrapper must resolve/reject the supplied `Promise` and must not expose the internal Java return type as the RN method contract.
+- `onUserManualInput()` is exactly no-argument and remains a focus notification, not a query submission.
+
+This establishes the method-level ABI shape for the Newman module, but it does not establish an exact React Native release number. Do not pin a Maven artifact from these descriptors alone. Continue version fingerprinting using additional class/API and native-library evidence or recover original Gradle dependency metadata.
