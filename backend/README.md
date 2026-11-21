@@ -36,3 +36,31 @@ Both documents are proposals only; no backend endpoint is implemented or deploye
 5. Never expose provider credentials or internal stack traces to clients.
 
 No live backend, enrollment flow, provider configuration or production endpoint exists yet. Do not configure the Android client with a made-up URL.
+
+
+## Backend scaffold
+
+The first TypeScript/Fastify scaffold is under `server/`.
+
+- Node.js 22 and strict TypeScript configuration.
+- `GET /health/live` is a process liveness check.
+- `GET /health/ready` checks PostgreSQL and Redis independently and fails closed.
+- PostgreSQL initial schema proposal is in `server/db/001_initial_schema.sql`.
+- Local PostgreSQL and Redis services are defined in `server/docker-compose.yml`.
+- Automated unit/injection tests cover config validation and health/readiness behavior.
+- GitHub Actions workflow `.github/workflows/backend-ci.yml` typechecks, tests and builds the backend.
+
+Local development:
+
+```sh
+cd backend/server
+cp .env.example .env
+docker compose up -d
+npm install
+npm run typecheck
+npm test
+npm run build
+npm run dev
+```
+
+The scaffold intentionally does not expose enrollment, chat, token issuance or provider routes yet. The SQL file is a reviewed-design starting point, not an automatically applied production migration. Do not expose this development compose configuration to the public internet.
