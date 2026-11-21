@@ -1,7 +1,7 @@
 # Project status
 
 **Snapshot:** 2026-11-21  
-**Current stage:** 004V-2 — timeout scheduler and callback dispatcher; emulator validation pending  
+**Current stage:** 004V-3 — local mock-gateway transport design and integration  
 **Overall status:** legacy reverse-engineering and platform-neutral prototypes exist; the Android security probe now builds and passes API 35 emulator instrumentation tests. Cortana UI/runtime integration remains unvalidated.
 
 ## Verified baseline
@@ -26,7 +26,7 @@
 - Session destruction deletes the Android Keystore alias and clears encrypted token preferences.
 - A pure-Java compatibility policy is covered by host-JVM unit tests for API 19, 22, 23 and 35. These tests verify the policy boundary; they are not a substitute for running Android on API 19–22.
 - Android instrumentation tests exercise ciphertext round-trip, key-deletion invalidation and session destruction on API 35.
-- Latest Android probe workflow run #94 (`44899189690`) completed successfully: 4 Keystore policy tests + 8 BridgeCore JVM tests, APK assembly and all 3 API 35 emulator instrumentation tests passed.
+- Latest Android probe workflow run #120 (`44900668260`) completed successfully: 4 Keystore policy tests + 16 BridgeCore JVM tests, APK assembly and all 5 API 35 emulator instrumentation tests passed.
 - Latest probe artifact ID `14705197305` from run #94; ZIP SHA-256 `df04f08ccf8aedb6b72a18b4266d6fe14b0c1aa979113971690de94304e20a88`. ZIP integrity verified; app APK 14,972 bytes (SHA-256 `13b4969587bc339407b16607b774c8db008ddbef703abf38b5d6a0ea6a537d73`) and instrumentation APK 1,679,113 bytes (SHA-256 `987102da35bc864a618e50cc2dc8d2be2d581947bdfe711e7a3647413d5cd807`).
 
 ## Stage 004S CI evidence
@@ -85,7 +85,7 @@
 - Added Android adapters: `AndroidMainThreadDispatcher` and `MainLooperTimeoutScheduler`. The timeout adapter uses the main looper; a blocked UI thread can delay timeout delivery, and network I/O must never run on that looper.
 - Expanded JVM bridge tests for timeout/success/cancel races, cancel-before-handle-return, timeout-before-handle-return, deferred dispatch, listener/dispatcher exceptions and scheduler failure.
 - Added API 35 instrumentation tests for Android main-looper dispatch and timeout delivery.
-- Latest Android run #120 (`44900668260`) has passed host-JVM tests and APK assembly; API 35 emulator instrumentation is still in progress. Do not mark Stage 004V-2 complete until the emulator step succeeds.
+- Android run #120 (`44900668260`) completed successfully: 20 host-JVM tests passed, APK assembly succeeded, and all 5 API 35 emulator instrumentation tests passed. Artifact #14706200956 was downloaded; ZIP and both APK archives passed integrity checks and their SHA-256 values were recorded above.
 - Latest backend run #119 (`44900668259`) completed typecheck/build, migration idempotency and 41/41 PostgreSQL/Redis tests successfully.
 
 ## Security and release constraints
