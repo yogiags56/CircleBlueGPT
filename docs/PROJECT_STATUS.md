@@ -1,7 +1,7 @@
 # Project status
 
 **Snapshot:** 2026-11-21  
-**Current stage:** 004V-5 — Android bridge runtime facade; CI pending; transport client and protocol codec validated  
+**Current stage:** 004V-6 — React Native NativeModule compatibility audit and integration plan; transport client and protocol codec validated  
 **Overall status:** legacy reverse-engineering and platform-neutral prototypes exist; the Android security probe now builds and passes API 35 emulator instrumentation tests. Cortana UI/runtime integration remains unvalidated.
 
 ## Verified baseline
@@ -163,7 +163,14 @@
 - `close()` is idempotent, cancels active conversation work before executor shutdown and rejects later calls with `BRIDGE_CLOSED`.
 - Production constructor uses platform default TLS validation; injected custom connection factory is available for test-only certificate trust.
 - Added API 35 instrumentation tests for runtime HTTPS round-trip, displayText mapping, main-thread delivery, active cancellation on close, closed-state rejection and conversation reset.
-- Android run #233 (`44904515691`) has passed 56 host-JVM tests and APK assembly; API 35 emulator instrumentation is still running. Backend run #206 (`44904515583`) completed successfully with typecheck/build, migration idempotency and 41/41 PostgreSQL/Redis tests. Do not mark 004V-5 complete until emulator instrumentation passes.
+- Android run #233 (`44904515691`) completed successfully: 56/56 host-JVM tests, APK assembly and all 12/12 API 35 emulator instrumentation tests passed. Backend run #206 (`44904515583`) completed successfully with typecheck/build, migration idempotency and 41/41 PostgreSQL/Redis tests. Stage 004V-5 is complete.
+
+### Stage 004V-5 Android runtime artifact — run #233
+
+- Artifact ID: `14707482360`; ZIP SHA-256: `268d9e49be7bd9a4e9ad29112692d80096467d9c538c372c98f67bc961b97839`.
+- App APK: 138,768 bytes; SHA-256 `bf8939263d4a6d5e6403579942b3ddae71164ac177e545cb190665592e0adb4e`.
+- Instrumentation APK: 2,331,655 bytes; SHA-256 `21e2753de65e82657f717cf7b31660f9883149a9c48f865a3062a8324ed8f926`.
+- ZIP and both APK archives passed integrity checks. Artifact expires 2026-12-05 per GitHub metadata.
 
 ## Security and release constraints
 
