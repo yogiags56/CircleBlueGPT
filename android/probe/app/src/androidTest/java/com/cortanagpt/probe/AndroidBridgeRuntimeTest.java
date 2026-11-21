@@ -10,6 +10,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.HttpsURLConnection;
+import okhttp3.mockwebserver.Dispatcher;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import okhttp3.mockwebserver.RecordedRequest;
@@ -79,27 +80,46 @@ public class AndroidBridgeRuntimeTest {
         }
     }
 
-    private static String response(String text) {
-        return "{\"protocolVersion\":1,\"requestId\":\"PLACEHOLDER\",\"message\":{\"text\":\"" + text + "\"}}";
+    private static String response(String requestId, String text) {
+        return "{\"protocolVersion\":1,\"requestId\":\"" + requestId
+                + "\",\"message\":{\"text\":\"" + text + "\"}}";
+    }
+
+    private static String requestIdFromBody(String body) {
+        String marker = "\"requestId\":\"";
+        int start = body.indexOf(marker);
+        if (start < 0) return null;
+        int valueStart = start + marker.length();
+        int end = body.indexOf('"', valueStart);
+        return end < 0 ? null : body.substring(valueStart, end);
     }
 
     @Test public void runtimeOwnsWorkerAndMapsRealHttpsReplyToLegacyView() throws Exception {
         try (TlsFixture tls = new TlsFixture()) {
-            tls.server.enqueue(new MockResponse().setBody(
-                    "{\"protocolVersion\":1,\"requestId\":\"PLACEHOLDER\",\"message\":{\"text\":\"Hello from runtime\"}}"));
+            final String[] capturedBody = {null};
+            tls.server.setDispatcher(new Dispatcher() {
+                @Override public MockResponse dispatch(RecordedRequest request) {
+                    capturedBody[0] = request.getBody().readUtf8();
+                    String requestId = requestIdFromBody(capturedBody[0]);
+                    if (requestId == null) return new MockResponse().setResponseCode(400);
+                    return new MockResponse().addHeader("Content-Type", "application/json")
+                            .setBody(response(requestId, "Hello from runtime"));
+                }
+            });
             AndroidBridgeRuntime runtime = tls.runtime();
             Listener listener = new Listener();
             String requestId = runtime.sendQuery("Hello Cortana", listener);
             assertNotNull(requestId);
+            assertTrue("runtime reply not delivered", listener.terminal.await(8, TimeUnit.SECONDS));
+            assertEquals(1, listener.messages.get());
+            assertEquals(0, listener.errors.get());
+            assertEquals("Hello from runtime", listener.displayText);
+            assertTrue("listener must be on main looper", listener.onMain);
+            assertNotNull(capturedBody[0]);
+            assertTrue(capturedBody[0].contains("\"requestId\":\"" + requestId + "\""));
             RecordedRequest recorded = tls.server.takeRequest(5, TimeUnit.SECONDS);
             assertNotNull(recorded);
-            String body = recorded.getBody().readUtf8();
-            assertTrue(body.contains("\"requestId\":\"" + requestId + "\""));
-            String reply = "{\"protocolVersion\":1,\"requestId\":\"" + requestId
-                    + "\",\"message\":{\"text\":\"Hello from runtime\"}}";
-            // The queued response body is fixed before the server sends it; request ID is checked by the codec.
-            // This test uses a deterministic ID-independent gateway response only in the separate codec suite.
-            assertTrue(listener.terminal.await(8, TimeUnit.SECONDS) || !reply.isEmpty());
+            assertEquals("POST", recorded.getMethod());
             runtime.close();
             assertTrue(runtime.isClosed());
         }
