@@ -97,7 +97,7 @@ Request:
 }
 ```
 
-The server verifies the JWK, thumbprint, challenge purpose/expiry/unused state and ECDSA signature, then atomically consumes the challenge. A challenge must not be reusable after success or failure.
+The server validates the JWK and thumbprint, then atomically consumes the matching unexpired, unused enrollment challenge **before signature verification**. It verifies the ECDSA signature against the returned nonce and submitted key. A challenge is burned even when signature verification fails; clients must request a fresh challenge rather than retrying a failed proof.
 
 Response:
 
@@ -123,10 +123,10 @@ Every authenticated request includes:
 - `X-Cortana-Proof: {base64url-DER-ECDSA-signature}`
 - A client-generated unique `X-Request-ID` for chat requests.
 
-The DPoP signature covers this exact UTF-8 canonical message (LF line endings, no trailing LF):
+The CortanaPoP signature covers this exact UTF-8 canonical message (LF line endings, no trailing LF):
 
 ```text
-CORTANAGPT-DPOP-V1
+CORTANAGPT-POP-V1
 {HTTP-METHOD-UPPERCASE}
 {PATH-AND-QUERY}
 {SHA256-OF-EXACT-REQUEST-BODY-BASE64URL}
@@ -207,7 +207,7 @@ Responses should include a correlation ID that is safe to expose; do not echo se
 
 1. Valid enrollment proof creates one session bound to the submitted key.
 2. Invalid signature, wrong thumbprint, expired challenge and reused challenge are rejected.
-3. Replaying a valid DPoP proof is rejected.
+3. Replaying a valid CortanaPoP proof is rejected.
 4. A proof signed by a different key cannot use the session token.
 5. Expired/revoked tokens and insufficient scopes are rejected.
 6. Renewal rotates tokens and revokes the old token atomically.
