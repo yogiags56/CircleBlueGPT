@@ -26,8 +26,8 @@
 - Session destruction deletes the Android Keystore alias and clears encrypted token preferences.
 - A pure-Java compatibility policy is covered by host-JVM unit tests for API 19, 22, 23 and 35. These tests verify the policy boundary; they are not a substitute for running Android on API 19–22.
 - Android instrumentation tests exercise ciphertext round-trip, key-deletion invalidation and session destruction on API 35.
-- Latest Android probe workflow run `44892449384` completed successfully: host-JVM API policy tests, APK assembly, and all 3 API 35 emulator instrumentation tests passed.
-- Latest probe artifact ID `14701979830`; ZIP SHA-256 `b8abaff11f04d3113b6e8c56236088a26580a08ce280f3a4b48b3db306cb940f`. ZIP integrity verified; app APK 11,275 bytes and instrumentation APK 1,679,116 bytes.
+- Latest Android probe workflow run `44893660206` completed successfully: host-JVM API policy tests, APK assembly, and all 3 API 35 emulator instrumentation tests passed.
+- Latest probe artifact ID `14703565424`; ZIP SHA-256 `72c88f64d0195f8cb2d10659d1f12a24697a3889c403fca4ba88c534f3bd6c28`. ZIP integrity verified; app APK 11,273 bytes and instrumentation APK 1,679,113 bytes.
 
 ## Stage 004S CI evidence
 
@@ -59,10 +59,11 @@
 - PostgreSQL/Redis connection wiring, a proposed initial schema and local Docker Compose services are present.
 - Unit tests cover configuration and health/readiness behavior.
 - Backend CI run #39 completed successfully: strict TypeScript typecheck and production build passed; the transactional PostgreSQL migration applied successfully and a second run correctly reported it already applied.
-- Backend CI run `44893586430` completed successfully: strict TypeScript typecheck and production build passed; migration #001 applied and safely re-applied.
+- Backend CI run `44893660207` completed successfully: strict TypeScript typecheck and production build passed; migration #001 applied and safely re-applied.
 - **26/26 automated tests passed** against CI PostgreSQL/Redis services.
 - Integration coverage includes schema verification, Redis PING, idempotency first-write/replay, body-hash conflict, concurrent duplicate requests, stored-response replay and invalid state transitions.
-- New unverified security primitives are now staged: strict P-256 public-JWK validation/RFC 7638 thumbprints/ECDSA-SHA256 verification, plus atomic Redis proof-ID replay claims. New tests cover these primitives and are awaiting a fresh CI result.
+- Strict P-256 public-JWK validation/RFC 7638 thumbprints/ECDSA-SHA256 verification and atomic Redis proof-ID replay claims passed CI as part of the 26 tests.
+- A PostgreSQL enrollment-challenge repository is now staged: 32-byte random nonce, short expiry, purpose-bound first-enrollment challenge, atomic single-use consumption. Six new tests cover issue/nonce shape, one-time consumption, concurrent consumption, expiry, rotation-purpose rejection and malformed IDs; CI is pending.
 - This validates the persistence primitive, not a complete chat endpoint or exactly-once external provider execution.
 - No enrollment, session issuance, chat completion, cryptographic proof validation or GPT provider adapter is implemented. The service is not production-ready.
 
@@ -83,6 +84,6 @@
 
 1. Review the proposed Stage 004T protocol and threat model; obtain independent cryptographic review before implementation.
 2. Promote and validate the platform-neutral BridgeCore, AES-GCM codec and HTTP transport source/tests from the recovery workspace when the exact files are available.
-3. Run CI for the new P-256 and Redis proof-replay primitives; obtain independent review of the session proof protocol before any enrollment/session endpoint is implemented.
+3. Run CI for the new enrollment-challenge persistence primitive; obtain independent review of the session proof protocol before implementing a live enrollment/session endpoint.
 4. Build the Android–GPT transport bridge against a mock backend.
 5. Integrate the original Cortana UI/persona only after backend and bridge gates pass.
