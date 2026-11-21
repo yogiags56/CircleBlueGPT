@@ -32,7 +32,7 @@ or production endpoint is included.
 
 ## Local build
 
-Use JDK 17 for current Android SDK command-line tools, then JDK 8 for Gradle 4.10.1. Use Node 20 for Metro's current transitive package engine requirements and Yarn 1 for dependency resolution:
+Use JDK 17 for current Android SDK command-line tools, then JDK 8 for Gradle 4.10.1. Use Node 16 for compatibility with the historical Metro 0.51 runtime and Yarn 1 with engine checks disabled for newer transitive metadata-only packages:
 
 ```sh
 yarn install --ignore-scripts --non-interactive
