@@ -57,3 +57,34 @@ Lifecycle guarantees in the core:
 
 The JVM suite now exercises timeout-vs-success/cancel, timeout before the gateway returns its call handle, cancellation before handle return, deferred dispatch, listener/dispatcher exceptions and scheduler failure. API 35 instrumentation also checks that the Android dispatcher and timeout adapter execute on the main looper. Android run #120 (`44900668260`) passed the 20 host-JVM tests, APK assembly and all 5 API 35 emulator instrumentation tests. The Android adapter behavior is validated on API 35; API 19–22 runtime behavior is still not emulator-tested.
 
+
+## Stage 004V-3 — local/mock HTTPS gateway (implementation in progress)
+
+Files:
+- `ChatProtocolCodec.java`: protocol-v1 JSON encoding/decoding.
+- `ChatHttpGateway.java`: bounded asynchronous HTTPS transport.
+
+Protocol codec:
+- Encodes the proposed v1 request DTO: protocolVersion, requestId, optional conversationId, input.text and context.selectedMemory.
+- Decodes only protocolVersion, requestId and message.text; duplicate or unknown fields are rejected.
+- Requires exact protocol version and matching request ID; rejects empty/oversized text and malformed/trailing JSON.
+- Request JSON cap: 64 KiB. Response body cap: 256 KiB. Response text cap: 65,536 characters.
+- UTF-8 decoding is strict; malformed byte sequences are rejected.
+
+HTTP gateway:
+- Endpoint URL is injected and must use HTTPS; userinfo, query and fragment are rejected.
+- Default connection factory uses the platform HTTPS stack and default certificate validation.
+- Uses an injected background Executor; never pass a main-thread executor.
+- POSTs fixed-length JSON to the injected endpoint with Content-Type, Accept and Idempotency-Key headers.
+- Connect/read timeouts are configurable and bounded to 120 seconds maximum.
+- Redirects are disabled; only HTTP 200 is accepted.
+- Response Content-Length and streaming reads are both bounded; non-200 bodies and provider error details are not exposed.
+- Cancellation and completion share one atomic lifecycle gate. Cancellation disconnects the active connection best-effort and suppresses late callbacks.
+- No Authorization/session token, production URL, GPT provider secret, retry or provider orchestration is included.
+
+CI history:
+- First Android run #152 (`44901611627`) failed 1/37 JVM tests: the strict parser classified a second top-level JSON value as malformed instead of the explicit trailing-data code.
+- Parser handling was corrected in commit `6e46c5a0d2b5c0ab3eac851d74720e9c7c70f30b`.
+- Corrected Android run #154 (`44901777496`) is currently validating the updated tests and API 35 emulator. The host-JVM task and APK assembly have passed; emulator instrumentation is still running at this checkpoint.
+- Backend run #142 (`44901777488`) passed typecheck/build, migration idempotency and integration test steps.
+
