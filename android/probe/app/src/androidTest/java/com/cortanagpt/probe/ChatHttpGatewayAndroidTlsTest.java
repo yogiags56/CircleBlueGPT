@@ -156,7 +156,7 @@ public class ChatHttpGatewayAndroidTlsTest {
 
     @Test public void androidHttpsCancellationDuringReadProducesOnlyCancelledTerminalEvent() throws Exception {
         try (TlsFixture tls = new TlsFixture()) {
-            tls.server.enqueue(new MockResponse().setBodyDelay(5, TimeUnit.SECONDS)
+            tls.server.enqueue(new MockResponse().setBodyDelay(2, TimeUnit.SECONDS)
                     .setBody(response("too late")));
             ExecutorService worker = Executors.newSingleThreadExecutor();
             try {
