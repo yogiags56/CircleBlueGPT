@@ -1,7 +1,7 @@
 # Project status
 
 **Snapshot:** 2026-11-21  
-**Current stage:** 004S — Android Keystore probe validation and secure session destruction  
+**Current stage:** 004T — anonymous installation session protocol design  
 **Overall status:** legacy reverse-engineering and platform-neutral prototypes exist; the Android security probe now builds and passes API 35 emulator instrumentation tests. Cortana UI/runtime integration remains unvalidated.
 
 ## Verified baseline
@@ -29,12 +29,13 @@
 
 ## Stage 004S CI evidence
 
-- GitHub Actions run: `44890430358` (commit `8e4438c3bd068b2e3e61306c0554f70c3b34a2af`).
-- API 35 emulator instrumentation: **3/3 tests completed successfully**.
-- Debug app and instrumentation APKs were uploaded as artifact `cortanagpt-probe-apks` (artifact ID `14701443256`).
-- Artifact ZIP SHA-256: `5b2b0a4e0d375f4e66b87ae4d0ce764052223e9fd191ee673ffad5310b7c0b1d`.
-- ZIP integrity verified; contents: debug app APK (11,051 bytes) and instrumentation APK (1,679,080 bytes).
-- The earlier API 19–22 instrumentation test returned without exercising its branch on API 35. Stage 004S moves this policy boundary to explicit host-JVM tests and adds a real API 35 destroy-flow test. These changes require a new CI run before they are considered verified.
+- GitHub Actions run: `44890908678` (PR validation of branch commit `00f7349580ebd6690b87f875d6bbff7dc4bdd730`).
+- Host-JVM API policy unit-test task: **passed** for the API 19, 22, 23 and 35 cases.
+- Android API 35 emulator instrumentation: **3 tests completed successfully**, including ciphertext round-trip, key-deletion invalidation and session destruction.
+- Debug app and instrumentation APKs uploaded as artifact `cortanagpt-probe-apks` (artifact ID `14701443910`).
+- Artifact ZIP SHA-256: `a04d25604fdce1d33d32e44aa4bd03ada68c3d27e4c9b2cef1418565788b5635`.
+- ZIP integrity verified; contents: debug app APK (11,274 bytes) and instrumentation APK (1,679,115 bytes).
+- API 19–22 behavior remains validated only at the pure-Java policy level, not on real legacy Android runtimes.
 
 ## Prototype work (not production)
 
@@ -43,9 +44,13 @@
 - These host-JVM prototypes are not yet promoted into the repository and are not part of the Android app.
 - The probe is not the restored Cortana app and does not connect to a GPT provider.
 
-## Not yet verified
+## Stage 004T protocol design
 
-- The latest Stage 004S source changes until the next CI run completes.
+- `backend/ANONYMOUS_SESSION_PROTOCOL.md` defines a proposed P-256 installation-key enrollment flow, short-lived scoped access tokens, proof-of-possession request signatures, replay protection, durable idempotency, rotation and revocation.
+- Rotation is specified as a separate authenticated flow bound to the existing session key; it is not first-time enrollment.
+- This is a design document only. It has not undergone independent cryptographic review and no endpoint is live.
+
+## Not yet verified
 - Real Android API 19–22 runtime behavior (the host-JVM tests validate only the compatibility policy).
 - Backend enrollment, anonymous session issuance, provider integration or durable idempotency.
 - React Native bridge integration, original APK patching, signing or installation.
@@ -60,8 +65,8 @@
 
 ## Next objectives
 
-1. Complete Stage 004S CI for JVM policy tests and Android API 35 instrumentation.
+1. Review the proposed Stage 004T protocol and threat model; obtain independent cryptographic review before implementation.
 2. Promote and validate the platform-neutral BridgeCore, AES-GCM codec and HTTP transport source/tests from the recovery workspace when the exact files are available.
-3. Define the anonymous enrollment/session API contract and threat model.
-4. Implement the backend session issuer before connecting any GPT provider.
-5. Build the Android–GPT transport bridge, then integrate the original Cortana UI/persona without changing her identity.
+3. Implement backend enrollment/session issuance, durable replay protection and idempotency with automated tests.
+4. Build the Android–GPT transport bridge against a mock backend.
+5. Integrate the original Cortana UI/persona only after backend and bridge gates pass.
