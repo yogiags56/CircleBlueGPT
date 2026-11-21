@@ -42,4 +42,12 @@ public final class EncryptedSessionTokenStore {
     public void clear() {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().commit();
     }
+
+    /** Irreversibly removes the session ciphertext and its Keystore key. */
+    public void destroy() throws Exception {
+        keys.delete();
+        boolean cleared = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .edit().clear().commit();
+        if (!cleared) throw new IllegalStateException("TOKEN_STORAGE_DESTROY_FAILED");
+    }
 }
