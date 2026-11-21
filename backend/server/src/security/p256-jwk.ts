@@ -71,7 +71,7 @@ export function verifyP256Sha256(
 
   try {
     const publicKey = createPublicKey({
-      key: jwk,
+      key: { kty: jwk.kty, crv: jwk.crv, x: jwk.x, y: jwk.y },
       format: "jwk"
     });
     return verify("sha256", Buffer.from(message), {
