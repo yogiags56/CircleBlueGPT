@@ -253,3 +253,9 @@
 - Corrected package API to the post-0.47 ReactPackage contract (no `createJSModules()` method).
 - This is a scaffold only: no Actions result has yet been observed for the new workflow, and no local build has been run. Transitive npm dependencies are not yet captured in a committed lockfile; lockfile/reproducibility hardening remains open.
 - Do not call RN 0.59.4 native parity or NativeModule integration validated until the API 28 emulator workflow passes.
+
+### Stage 004V-7 CI iteration 1 — SDK/JDK mismatch corrected (2026-11-22)
+
+- First workflow run #15 (`44934215889`) failed before SDK installation or project compilation. Log evidence: `android-actions/setup-android@v4` downloaded command-line tools 22.0, which requires JDK 17, while the job had already switched to JDK 8 for Gradle 4.10.1.
+- Corrected workflow order: JDK 17 for Android SDK setup and SDK package installation, then switch to JDK 8 immediately before the legacy Gradle build.
+- This is an environment bootstrap failure, not evidence of a React Native or Java source compile failure. Re-run status is pending; no APK or runtime validation yet.
