@@ -108,3 +108,7 @@ Android run #167 (`44902414304`) completed successfully: 44/44 host-JVM tests, A
 
 
 **Next stage (004V-3C):** add API 35 Android instrumentation that exercises the actual `ChatHttpGateway` over a local HTTPS MockWebServer using test-only trust. The current real-TLS tests run on the host JVM; Android runtime HTTPS interoperability remains unverified.
+
+**Stage 004V-3C complete:** Android API 35 instrumentation exercised the actual `ChatHttpGateway` against local HTTPS MockWebServer using test-only certificate trust. It verified TLS round-trip through BridgeCore, main-looper listener delivery, redirect rejection and cancellation during response read.
+
+**Next stage (004V-4):** add a platform-neutral legacy conversation adapter for the statically mapped NewmanViewModule text-query/reset/cancel surface. The adapter must produce only validated `view.displayText` messages and explicitly reject legacy skill/action events outside the MVP.
