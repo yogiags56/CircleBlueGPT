@@ -156,6 +156,32 @@ public class LegacyConversationAdapterTest {
         assertEquals("current", second.displayText);
     }
 
+    @Test public void cancellationListenerCanReenterWithoutLeavingOrphanRequest() {
+        final Fixture f = new Fixture();
+        final RecordingListener third = new RecordingListener();
+        final String[] thirdId = {null};
+        RecordingListener first = new RecordingListener() {
+            @Override public void onCancelled() {
+                super.onCancelled();
+                thirdId[0] = f.adapter.sendQuery("third", third);
+            }
+        };
+        RecordingListener second = new RecordingListener();
+        f.adapter.sendQuery("first", first);
+        String secondId = f.adapter.sendQuery("second", second);
+        assertNotNull(thirdId[0]);
+        assertEquals(1, first.cancellations);
+        assertEquals(1, second.cancellations);
+        assertEquals(1, f.gateway.cancelCounts.get(secondId).intValue());
+        assertEquals(thirdId[0], f.adapter.getActiveRequestId());
+        f.gateway.succeed(secondId, "stale second response");
+        f.gateway.succeed(thirdId[0], "third response");
+        assertEquals(0, second.messages);
+        assertEquals(1, third.messages);
+        assertEquals("third response", third.displayText);
+        assertEquals(0, f.bridge.activeRequestCount());
+    }
+
     @Test public void invalidTextFailsBeforeMemorySelectionOrGateway() {
         final int[] memoryCalls = {0};
         Fixture f = new Fixture(new LegacyConversationAdapter.SelectedMemoryProvider() {
