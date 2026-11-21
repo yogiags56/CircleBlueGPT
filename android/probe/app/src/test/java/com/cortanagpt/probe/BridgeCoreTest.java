@@ -250,6 +250,19 @@ public class BridgeCoreTest {
         assertEquals(0, f.core.activeRequestCount());
     }
 
+    @Test public void cancellationBeforeGatewayReturnsCancelsLateCallHandle() {
+        final Fixture f = new Fixture();
+        f.gateway.beforeReturn = new Runnable() {
+            @Override public void run() { assertTrue(f.core.cancel(ID)); }
+        };
+        RecordingListener listener = new RecordingListener();
+        f.core.submit(request(), listener);
+        assertEquals(1, listener.cancellations);
+        assertEquals(1, f.gateway.cancelCalls);
+        assertEquals(1, f.scheduler.cancelCalls);
+        assertEquals(0, f.core.activeRequestCount());
+    }
+
     @Test public void callbackDispatcherCanDeferDeliveryWithoutHoldingRequestActive() {
         Fixture f = new Fixture();
         f.dispatcher.immediate = false;
