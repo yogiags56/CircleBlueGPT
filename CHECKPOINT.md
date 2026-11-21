@@ -151,3 +151,9 @@ Latest implementation commits: `2960f4b`, `1110583`, `1e29bed`; documentation co
 ## Persona asset inventory — 48 PERS files (2026-11-21)
 
 The original APK's 48 PERS containers were inspected; all embedded GIF payloads decoded and frame counts matched XML metadata: 1,846 frames total, 2,502,596 container bytes, canvas sizes 100×116, 214×249 and 428×500. Full metadata table: `docs/legacy/CORTANA_PERSONA_ASSET_INVENTORY.md`. This complete inventory supersedes the earlier partial 15-segment/364-frame extraction count as the total APK asset count. No extracted proprietary GIFs or APK binaries were committed. Persona state/timing/transition mapping remains pending.
+
+## Persona metadata catalog implementation — Stage 004V-6A (2026-11-21)
+
+Added `android/probe/app/src/main/java/com/cortanagpt/probe/persona/PersonaAssetCatalog.java` and `android/probe/app/src/test/java/com/cortanagpt/probe/PersonaAssetCatalogTest.java`. The catalog indexes all 48 PERS assets with family, filename expression token, source GIF dimensions, frame count and container bytes. It exposes immutable listing, exact basename lookup, family/expression variants and aggregate counts. It rejects path traversal and does not include proprietary image payloads or infer runtime state transitions. Six JVM tests verify 48 files, 1,846 frames, 2,502,596 bytes, family totals, dimensions, variants, safe lookup and immutability.
+
+Code commits: `4d05afe851fd53fac98619416d9b5cf6433a95a9` and `6ca7f818747f3da7265ed5dd02e249462b130cf8`. Documentation update follows. Await Android CI before treating this slice as validated. Exact React Native version remains unknown; no guessed dependency has been added.
