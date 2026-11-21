@@ -57,6 +57,11 @@ test("authenticates only an active unexpired token and returns its bound session
     assert.deepEqual(authenticated.scopes, ["chat:send"]);
     assert.equal(await repository.authenticate("not-a-token"), null);
     assert.equal(await repository.authenticate(randomUUID()), null);
+    await pool.query(
+      "UPDATE session_tokens SET expires_at = NOW() - INTERVAL '1 second' WHERE token_id = $1",
+      [issued.tokenId]
+    );
+    assert.equal(await repository.authenticate(issued.accessToken), null);
   } finally {
     await cleanupSession(sessionId);
   }
@@ -85,8 +90,8 @@ test("rotation revokes old token and makes only replacement token valid", async 
       [sessionId]
     );
     assert.equal(rows.rowCount, 2);
-    assert.ok(rows.rows[0].revoked_at);
-    assert.equal(rows.rows[1].revoked_at, null);
+    assert.equal(rows.rows.filter(row => row.revoked_at !== null).length, 1);
+    assert.equal(rows.rows.filter(row => row.revoked_at === null).length, 1);
   } finally {
     await cleanupSession(sessionId);
   }
