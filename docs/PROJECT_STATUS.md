@@ -122,6 +122,15 @@
 - Instrumentation APK: 1,679,316 bytes; SHA-256 `707f2bcb46e160c24f98b8d4c5f798f6fbdcf45418a5cce92003dff6afa27929`.
 - ZIP and both APK archives passed integrity checks. Artifact expires 2026-12-05 per GitHub metadata.
 
+## Stage 004V-3C Android runtime HTTPS verification (CI in progress)
+
+- Added `ChatHttpGatewayAndroidTlsTest` under `androidTest`; uses local MockWebServer and a generated test certificate trusted only by the test client.
+- Exercises the actual Android `HttpsURLConnection` path through BridgeCore, including TLS round-trip, main-looper callback delivery, redirect rejection and cancellation during response read.
+- Test-only certificate trust is scoped to the test connection factory; production/default HTTPS trust is unchanged.
+- Android run #181 (`44902907961`) passed 44/44 host-JVM tests and APK assembly; API 35 emulator instrumentation is still running.
+- Backend run #165 (`44902907996`) passed typecheck/build, migration idempotency and 41/41 PostgreSQL/Redis tests.
+- Do not mark 004V-3C complete until emulator instrumentation finishes and the test result is inspected.
+
 ## Security and release constraints
 
 - Keep provider credentials exclusively on the backend; never embed provider API keys in the APK.
