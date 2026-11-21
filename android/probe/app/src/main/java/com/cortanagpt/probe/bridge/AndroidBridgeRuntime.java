@@ -83,8 +83,12 @@ public final class AndroidBridgeRuntime implements AutoCloseable {
         }
     }
 
-    public String onUserManualInput(String text, LegacyConversationAdapter.Listener listener) {
-        return sendQuery(text, listener);
+    /** Mirrors NewmanViewModule's no-argument text-input focus notification. */
+    public void onUserManualInput() {
+        synchronized (lifecycleLock) {
+            if (closed.get()) return;
+            conversationAdapter.onUserManualInput();
+        }
     }
 
     public boolean cancelListening() {
