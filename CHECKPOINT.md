@@ -189,3 +189,7 @@ Workflow run #20 (`44934341325`) passed JDK17 Android SDK setup, Android SDK 28 
 ## RN 0.59.4 shell CI iteration 3 — Babel dependency pin (2026-11-22)
 
 Workflow run #24 (`44934502675`) passed SDK/JDK setup and npm install, but Metro failed parsing Flow syntax in `Libraries/Blob/URL.js`. First Yarn attempt #29 (`44934669969`) failed dependency installation because some modern transitive packages require Node >=18/20 while the workflow still used Node 10. Current correction: keep React Native 0.59.4, resolve `metro-react-native-babel-preset` to 0.59.0 for the Flow parser fix, run Metro on Node 20, and keep Gradle on JDK 8 after Android SDK setup under JDK 17. Yarn 1.22.22 remains the dependency manager. Generated `yarn.lock` must be committed after the first successful resolution. Next CI must prove bundle generation, then compile and emulator tests.
+
+## RN 0.59.4 shell CI iteration 4 — Babel core peer (2026-11-22)
+
+Workflow run #37 (`44934828118`) passed SDK/JDK setup and Yarn install on Node 20, but Metro failed with `Cannot read properties of undefined (reading 'transformFile')`. Yarn logs showed missing peer `@babel/core` for the Metro transformer/preset. Added explicit build dependencies `@babel/core 7.16.5` and `metro-react-native-babel-preset 0.59.0`; RN runtime remains pinned to 0.59.4. Await next CI to validate bundling, compilation and API 28 emulator checks.
