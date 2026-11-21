@@ -10,9 +10,9 @@
 
 > Recovery rule: when a conversation is interrupted, first read this file, then inspect the current branch HEAD and the latest GitHub Actions runs. Do not infer progress from chat history alone. Treat the repository and CI evidence as authoritative.
 
-> **Latest dated checkpoint:** [2026-11-21 — Stage 004V](docs/checkpoints/2026-11-21-stage-004v.md). This dated record includes verified Android run #94, backend run #99, current limitations, and explicit next steps for lifecycle hardening. Read it after this root index when resuming.
+> **Latest dated checkpoint:** [2026-11-21 — Stage 004V](docs/checkpoints/2026-11-21-stage-004v.md). Detailed checkpoint commit: `ea2984df5d912d558154158a86d35143bffe9ac1`. This dated record includes verified Android run #94, backend run #99, current limitations, and explicit next steps for lifecycle hardening. Read it after this root index when resuming.
 
-**Current verified state (2026-11-21):** Android run #94 (`44899189690`) passed 12 JVM tests, APK assembly and 3 API 35 instrumentation tests; backend run #99 (`44899189694`) passed 41/41 tests. Next implementation slice: injectable timeout scheduler and callback dispatcher for BridgeCore, followed by deterministic race tests. Do not assume any work after the dated checkpoint is complete without checking the branch and CI.
+**Current verified state (2026-11-21):** Android run #94 (`44899189690`) passed 12 JVM tests, APK assembly and 3 API 35 instrumentation tests; backend run #99 (`44899189694`) passed 41/41 tests. Next implementation slice: injectable timeout scheduler and callback dispatcher for BridgeCore, followed by deterministic race tests. The root checkpoint, detailed checkpoint, project status and roadmap were synchronized on 2026-11-21. These documentation commits do not represent new product/test results. Do not assume any later implementation work is complete without checking the branch and CI.
 
 ## 1. Project intent and non-negotiable decisions
 
