@@ -22,7 +22,9 @@ Both documents are proposals only; no backend endpoint is implemented or deploye
 
 ## Proposed endpoints (not implemented)
 
-- `POST /v1/sessions` — enroll or rotate an anonymous installation session.
+- `POST /v1/enrollment/challenges` — request a one-time enrollment or authenticated rotation challenge.
+- `POST /v1/sessions` — complete first-time enrollment.
+- `POST /v1/sessions/rotate` — rotate an existing authenticated session.
 - `POST /v1/chat/completions` — submit a conversation turn.
 - `DELETE /v1/requests/{requestId}` — request cancellation.
 - `DELETE /v1/sessions/current` — revoke the current session.
