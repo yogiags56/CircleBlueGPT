@@ -56,7 +56,8 @@
 - Configuration validation, liveness and dependency readiness routes are implemented with dependency injection for tests.
 - PostgreSQL/Redis connection wiring, a proposed initial schema and local Docker Compose services are present.
 - Unit tests cover configuration and health/readiness behavior.
-- A backend CI workflow typechecks, tests and builds the service. Its first CI run is pending.
+- Backend CI run #20 completed successfully: strict TypeScript typecheck, **9/9 automated tests passed**, and production TypeScript build succeeded.
+- Tests use Fastify injection and dependency fakes; PostgreSQL/Redis live integration, migrations, enrollment and GPT calls are not yet exercised.
 - No enrollment, session issuance, chat completion, cryptographic proof validation or GPT provider adapter is implemented. The service is not production-ready.
 
 ## Not yet verified
@@ -76,6 +77,6 @@
 
 1. Review the proposed Stage 004T protocol and threat model; obtain independent cryptographic review before implementation.
 2. Promote and validate the platform-neutral BridgeCore, AES-GCM codec and HTTP transport source/tests from the recovery workspace when the exact files are available.
-3. Complete backend CI, then implement migrations, enrollment/session issuance, durable replay protection and idempotency with automated tests.
+3. Add real PostgreSQL/Redis integration tests and a repeatable migration runner; then implement enrollment/session issuance, durable replay protection and idempotency with automated tests.
 4. Build the Android–GPT transport bridge against a mock backend.
 5. Integrate the original Cortana UI/persona only after backend and bridge gates pass.
