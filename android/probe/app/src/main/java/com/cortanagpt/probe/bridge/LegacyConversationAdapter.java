@@ -104,8 +104,8 @@ public final class LegacyConversationAdapter {
 
             if (pending != null) {
                 if (pending.previousId != null) bridge.cancel(pending.previousId);
+                final long requestGeneration = pending.generation;
                 try {
-                    final long requestGeneration = pending.generation;
                     bridge.submit(pending.request, new BridgeCore.Listener() {
                         @Override public void onSuccess(ChatResponse response) {
                             if (!claim(requestId, requestGeneration)) return;
