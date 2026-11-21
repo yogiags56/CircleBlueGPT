@@ -3,7 +3,7 @@
 **Source:** user-supplied immutable Microsoft Cortana Android 3.3.3.2876 APK.
 **APK SHA-256:** `c8c3192bc29057dfc398f4cb8fa3bfc549422373e0688a4c6de993f37a233d6c`
 **Inspection:** PERS container header and embedded GIF payload metadata; no source APK files modified.
-**Inventory:** 48 PERS files; 1846 embedded GIF frames; 2,502,596 bytes of PERS containers.
+**Inventory:** 48 PERS files (23 `circle_*`, 25 `miantuan_*`); 1,846 embedded GIF frames; 2,502,596 bytes of PERS containers.
 
 | Asset | PERS bytes | Frames | GIF dimensions |
 |---|---:|---:|---:|
