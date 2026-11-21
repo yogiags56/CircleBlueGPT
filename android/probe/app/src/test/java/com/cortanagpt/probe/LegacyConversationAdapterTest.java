@@ -101,15 +101,11 @@ public class LegacyConversationAdapterTest {
         assertNull(f.adapter.getActiveRequestId());
     }
 
-    @Test public void onUserManualInputUsesSameValidatedTextPath() {
+    @Test public void onUserManualInputIsFocusNotificationAndDoesNotSubmitQuery() {
         Fixture f = new Fixture();
-        RecordingListener listener = new RecordingListener();
-        String id = f.adapter.onUserManualInput("manual text", listener);
-        assertNotNull(id);
-        assertEquals("manual text", f.gateway.requests.get(id).getText());
-        f.gateway.succeed(id, "manual response");
-        assertEquals(1, listener.messages);
-        assertEquals("manual response", listener.displayText);
+        f.adapter.onUserManualInput();
+        assertTrue(f.gateway.requests.isEmpty());
+        assertNull(f.adapter.getActiveRequestId());
     }
 
     @Test public void cancelListeningEmitsOneCancelAndSuppressesLateSuccess() {
