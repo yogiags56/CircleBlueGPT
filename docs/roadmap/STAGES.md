@@ -12,7 +12,7 @@
 | 004Q | Retry/cancellation hardening and Android probe scaffold | JVM suite has 13 checks; cancellation test showed timing sensitivity during 004R rerun |
 | 004R | Repository bootstrap, deterministic tests, Android toolchain readiness | Completed; CI toolchain validated |
 | 004S | Android Keystore probe, API policy tests and secure session destruction | Completed; JVM policy task and 3 API 35 instrumentation tests passed |
-| 004T | Anonymous installation session protocol and threat model | Protocol proposal committed; security review and implementation pending |
+| 004T | Anonymous session protocol, threat model and backend foundation | Protocol/design committed; Fastify + PostgreSQL/Redis foundation and durable idempotency primitive implemented; 17/17 CI tests passed; session issuer still pending security review |
 
 ## Exit criteria for 004R
 
@@ -24,8 +24,7 @@
 
 ## Later milestones
 
-- 004U: implement the reviewed anonymous session backend and durable idempotency.
-- 004V: bridge integration against mock backend.
-- 004W: controlled persona/UI integration assessment.
-- 004V: controlled persona/UI integration assessment.
+- 004U: implement reviewed enrollment/session issuance, proof verification and revocation endpoints.
+- 004V: connect the Android bridge against a mock backend, then the reviewed session API.
+- 004W: controlled Cortana UI/persona integration assessment.
 - 005: end-to-end MVP only after all preceding gates pass.
