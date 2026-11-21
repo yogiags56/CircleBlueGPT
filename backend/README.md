@@ -2,6 +2,13 @@
 
 The backend is a required security boundary, not an optional proxy.
 
+Design references:
+
+- [Anonymous installation session protocol](ANONYMOUS_SESSION_PROTOCOL.md) — proposed enrollment, proof-of-possession, rotation and revocation contract.
+- [Threat model](THREAT_MODEL.md) — assets, trust boundaries, threats, mitigations and implementation gates.
+
+Both documents are proposals only; no backend endpoint is implemented or deployed.
+
 ## Responsibilities
 
 - Anonymous installation enrollment and session lifecycle.
