@@ -9,7 +9,9 @@ export function buildApp(config: AppConfig, dependencies: AppDependencies): Fast
     logger: { level: config.logLevel },
     bodyLimit: config.maxBodyBytes,
     disableRequestLogging: true,
-    trustProxy: false
+    trustProxy: false,
+    requestIdHeader: "x-request-id",
+    genReqId: () => crypto.randomUUID()
   });
 
   registerHealthRoutes(app, dependencies);
@@ -18,6 +20,11 @@ export function buildApp(config: AppConfig, dependencies: AppDependencies): Fast
     if (error.statusCode === 413) {
       return reply.code(413).send({
         error: { code: "REQUEST_TOO_LARGE", message: "Request body exceeds the configured limit." }
+      });
+    }
+    if (error.statusCode !== undefined && error.statusCode >= 400 && error.statusCode < 500) {
+      return reply.code(error.statusCode).send({
+        error: { code: "INVALID_REQUEST", message: "The request is malformed or invalid." }
       });
     }
     app.log.error({ err: error }, "Unhandled request error");
