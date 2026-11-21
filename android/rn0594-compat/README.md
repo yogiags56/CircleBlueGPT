@@ -32,7 +32,7 @@ or production endpoint is included.
 
 ## Local build
 
-Use JDK 17 for current Android SDK command-line tools, then JDK 8 for Gradle 4.10.1. Use Node 10 and Yarn 1 for this historical toolchain:
+Use JDK 17 for current Android SDK command-line tools, then JDK 8 for Gradle 4.10.1. Use Node 20 for Metro's current transitive package engine requirements and Yarn 1 for dependency resolution:
 
 ```sh
 yarn install --ignore-scripts --non-interactive
@@ -44,7 +44,7 @@ node node_modules/react-native/local-cli/cli.js bundle \
 gradle --no-daemon :app:assembleDebug
 ```
 
-The package manifest pins Babel's parser/traversal toolchain through Yarn resolutions. This avoids a known Flow parser regression in older Metro presets when modern Babel traversal versions are resolved. Commit the generated `yarn.lock` after the first successful dependency resolution to make the full transitive tree reproducible.
+The package manifest keeps React Native at 0.59.4 while resolving the Metro Babel preset to 0.59.0. This preset revision contains the Flow parsing fix needed for modern Babel traversal behavior; it is a build-tool adjustment, not an RN runtime upgrade. Commit the generated `yarn.lock` after the first successful dependency resolution to make the full transitive tree reproducible.
 
 ## Compatibility gates still open
 
