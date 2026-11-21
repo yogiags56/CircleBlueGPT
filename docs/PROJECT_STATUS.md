@@ -1,7 +1,7 @@
 # Project status
 
-**Snapshot:** 2026-11-21  
-**Current stage:** 004V-6 — React Native NativeModule compatibility audit and integration plan; transport client and protocol codec validated  
+**Snapshot:** 2026-11-22  
+**Current stage:** 004V-7 — isolated React Native 0.59.4 compatibility shell scaffold; CI validation pending  
 **Overall status:** legacy reverse-engineering and platform-neutral prototypes exist; the Android security probe now builds and passes API 35 emulator instrumentation tests. Cortana UI/runtime integration remains unvalidated.
 
 ## Verified baseline
