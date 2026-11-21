@@ -3,7 +3,7 @@
 CREATE TABLE IF NOT EXISTS enrollment_challenges (
   challenge_id TEXT PRIMARY KEY,
   purpose TEXT NOT NULL CHECK (purpose IN ('enroll', 'rotate')),
-  nonce_hash BYTEA NOT NULL,
+  nonce BYTEA NOT NULL,
   session_id UUID NULL,
   public_key_thumbprint TEXT NULL,
   expires_at TIMESTAMPTZ NOT NULL,
@@ -19,12 +19,15 @@ CREATE INDEX IF NOT EXISTS enrollment_challenges_expiry_idx
 CREATE TABLE IF NOT EXISTS installation_sessions (
   session_id UUID PRIMARY KEY,
   public_key_jwk JSONB NOT NULL,
-  public_key_thumbprint TEXT NOT NULL UNIQUE,
+  public_key_thumbprint TEXT NOT NULL,
   status TEXT NOT NULL CHECK (status IN ('active', 'revoked', 'expired')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   expires_at TIMESTAMPTZ NOT NULL,
   revoked_at TIMESTAMPTZ NULL
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS installation_sessions_active_key_idx
+  ON installation_sessions (public_key_thumbprint) WHERE status = 'active';
 
 CREATE TABLE IF NOT EXISTS session_tokens (
   token_id UUID PRIMARY KEY,
