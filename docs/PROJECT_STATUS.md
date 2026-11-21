@@ -23,11 +23,18 @@
 
 - Platform-neutral BridgeCore and AES-GCM codec prototypes exist in the recovery workspace.
 - Java HTTP transport prototype uses HTTPS in production mode, bounded response parsing, request IDs, idempotency headers, bounded retries and best-effort server cancellation.
-- A minimal Android probe project exists with API 23+ Android Keystore AES-GCM storage and an explicit no-downgrade policy on API 19–22.
+- Android probe project is now committed under `android/probe/`, including the Gradle project, manifest, API 23+ Android Keystore AES-GCM token store and instrumentation test source.
+- API 19–22 persistent sensitive storage is intentionally unsupported in this prototype; no plaintext or weak-key fallback is provided.
 
-## Latest local test observation
+## Stage 004R test observation
 
-The Stage 004Q test suite was run twice during repository bootstrap. One run failed the asynchronous server-DELETE cancellation assertion after a fixed 350 ms sleep; a subsequent clean run passed 13/13. This makes the cancellation test timing-sensitive. Treat the 13/13 result as a passing rerun, not as proof the test is deterministic. Stage 004R must replace fixed sleeps with bounded latch/poll synchronization and rerun repeatedly.
+The first local rerun exposed a timing-sensitive cancellation assertion caused by a fixed 350 ms sleep. The local test was changed to use a bounded wait for the asynchronous server DELETE and an atomic callback counter. After that correction, five consecutive complete runs passed:
+
+- Stage 004Q transport: **13/13** on each run.
+- Stage 004O BridgeCore: **10/10** on each run.
+- Stage 004O AES-GCM codec: **3/3** on each run.
+
+The JVM test sources and this test-harness correction are still in the recovery workspace, not yet promoted into this repository. These are host-JVM loopback tests, not Android tests.
 
 ## Not yet verified
 
@@ -38,10 +45,16 @@ The Stage 004Q test suite was run twice during repository bootstrap. One run fai
 - React Native bridge integration, original APK patching, signing or installation.
 - End-to-end conversation with a real GPT provider.
 
+## Toolchain check in this workspace
+
+- OpenJDK 21.0.12.1 is present.
+- `gradle`, `adb`, Android SDK environment variables, `android.jar` and `sdkmanager` are absent.
+- Therefore the Android Gradle project cannot currently be built here. The committed probe uses Android Gradle Plugin 8.7.3 and Java 8 source compatibility. Android's official build documentation lists JDK 17 as the minimum runtime for AGP 8.x; the available JDK 21 satisfies that JDK baseline, but Gradle and Android SDK are still missing.
+
 ## Stage 004R objectives
 
-1. Make this repository the durable source of truth for project documentation and validated source.
-2. Bring the isolated Android probe and JVM prototypes under version control without including the original APK or proprietary extracted payloads.
-3. Make cancellation tests deterministic and record repeated-run results.
+1. Keep this repository the durable source of truth for project documentation and validated Android scaffold.
+2. Promote JVM bridge/transport source and tests from the recovery workspace.
+3. Keep cancellation tests deterministic and record reproducible results.
 4. Establish a reproducible Android SDK/Gradle build environment.
-5. Keep backend and original-app integration blocked until their independent contracts and tests exist.
+5. Do not commit the original APK, secrets or unreviewed proprietary payloads.
