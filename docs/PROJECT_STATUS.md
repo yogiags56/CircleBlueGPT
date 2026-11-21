@@ -207,3 +207,11 @@
 - Inventory found 48 persona PERS assets (24 circle + 24 miantuan), 2,502,596 bytes total. Full decode/state mapping remains pending.
 - Exact React Native version remains unpinned; JSC/legacy bridge evidence is insufficient to select a Maven artifact.
 - Three code commits correct the no-argument focus hook in LegacyConversationAdapter, its test, and AndroidBridgeRuntime. CI status must be checked before calling this change validated.
+
+### Stage 004V-6 — full persona PERS inventory decoded (2026-11-21)
+
+- Parsed all 48 PERS containers from the immutable reference APK (24 circle + 24 miantuan).
+- Decoded embedded GIF payloads and verified all XML-declared frame counts against actual GIF frame counts: 1,846 total frames.
+- Container bytes total 2,502,596; source GIF canvases are 100×116, 214×249 and 428×500.
+- Added metadata-only inventory at `docs/legacy/CORTANA_PERSONA_ASSET_INVENTORY.md`; no extracted GIF payloads or APK binaries were committed.
+- This complete 48-file inventory supersedes the earlier partial 15-segment/364-frame count as the total APK asset inventory. Persona state/timing/transition mapping is still pending.
