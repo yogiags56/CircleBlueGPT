@@ -26,8 +26,8 @@
 - Session destruction deletes the Android Keystore alias and clears encrypted token preferences.
 - A pure-Java compatibility policy is covered by host-JVM unit tests for API 19, 22, 23 and 35. These tests verify the policy boundary; they are not a substitute for running Android on API 19–22.
 - Android instrumentation tests exercise ciphertext round-trip, key-deletion invalidation and session destruction on API 35.
-- Latest Android probe workflow run `44894581676` completed successfully: host-JVM API policy tests, APK assembly, and all 3 API 35 emulator instrumentation tests passed. A fresh branch-head Android workflow (`44897661202`) is running after the backend token repository additions.
-- Latest probe artifact ID `14703004994`; ZIP SHA-256 `aff277847cd34bffe6d7d246538b8b9adebfa8f81d50ead07a4bb0189ac9e330`. ZIP integrity verified; app APK 11,274 bytes and instrumentation APK 1,679,116 bytes.
+- Latest Android probe workflow run `44897661202` completed successfully: host-JVM API policy tests, APK assembly and all 3 API 35 emulator instrumentation tests passed.
+- Latest probe artifact ID `14705020325`; ZIP SHA-256 `fb9eedac18896803f869d4382623237d85e7fa8461bac013742323eb18aefd1f`. ZIP integrity verified; app APK 11,279 bytes (SHA-256 `20ea1b68964bf96aa724d6cfa775b1ea1ecbaf9b8d8f58010020977dc0545c31`) and instrumentation APK 1,679,118 bytes (SHA-256 `7534924930bcc2cb79d58df59ca5353ee8c7a4b4add3f697910f1779a75ad97b`).
 
 ## Stage 004S CI evidence
 
@@ -63,7 +63,7 @@
 - PostgreSQL enrollment challenge repository creates 32-byte nonces and opaque IDs, bounds expiry, binds purpose and atomically consumes enrollment challenges once.
 - Session-token repository issues opaque 256-bit access tokens, stores only SHA-256 token hashes, checks active session/token state, enforces fixed scopes and bounded lifetime, prevents repeat initial issuance, requires the current unexpired token for rotation, and revokes session/token state transactionally.
 - Backend CI run `44897661183` passed strict TypeScript typecheck/build, both migration passes and **41/41 tests** against PostgreSQL/Redis services. The tests include challenge single-use/expiry/purpose isolation, P-256 signature and off-curve rejection, Redis replay concurrency, idempotency and session-token hash/authentication/expiry/rotation/revocation behavior.
-- These are repository-level primitives and health routes only. No public enrollment/authentication/rotation/revocation/chat endpoints, DPoP middleware, provider adapter or production deployment exists. The custom proof-of-possession protocol has not received independent cryptographic review.
+- These are repository-level primitives and health routes only. No public enrollment/authentication/rotation/revocation/chat endpoints, CortanaPoP verification middleware, provider adapter or production deployment exists. The custom CortanaPoP proof-of-possession protocol has not received independent cryptographic review.
 - No exactly-once external provider execution is claimed; idempotency is not yet connected to a chat/provider orchestration route.
 
 ## Security and release constraints
@@ -77,6 +77,6 @@
 
 1. Review the proposed Stage 004T protocol and threat model; obtain independent cryptographic review before implementation.
 2. Promote and validate the platform-neutral BridgeCore, AES-GCM codec and HTTP transport source/tests from the recovery workspace when the exact files are available.
-3. Obtain independent cryptographic review of the custom proof-of-possession protocol before composing the tested challenge, P-256, replay and token primitives into public enrollment/session endpoints. The repository-level session-token tests have passed 41/41 in CI.
+3. Obtain independent cryptographic review of the custom CortanaPoP proof-of-possession protocol before composing the tested challenge, P-256, replay and token primitives into public enrollment/session endpoints. The repository-level session-token tests have passed 41/41 in CI.
 4. Build the Android–GPT transport bridge against a mock backend.
 5. Integrate the original Cortana UI/persona only after backend and bridge gates pass.
