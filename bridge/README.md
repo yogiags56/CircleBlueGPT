@@ -55,5 +55,5 @@ Lifecycle guarantees in the core:
 - Late gateway callbacks are ignored.
 - Listener code is not called under the internal lock. Listener and dispatcher runtime exceptions are contained so they cannot corrupt request state.
 
-The JVM suite now exercises timeout-vs-success/cancel, timeout before the gateway returns its call handle, cancellation before handle return, deferred dispatch, listener/dispatcher exceptions and scheduler failure. API 35 instrumentation also checks that the Android dispatcher and timeout adapter execute on the main looper. The current Android CI run for these additions must be checked before marking this section verified.
+The JVM suite now exercises timeout-vs-success/cancel, timeout before the gateway returns its call handle, cancellation before handle return, deferred dispatch, listener/dispatcher exceptions and scheduler failure. API 35 instrumentation also checks that the Android dispatcher and timeout adapter execute on the main looper. Android run #120 (`44900668260`) passed the 20 host-JVM tests, APK assembly and all 5 API 35 emulator instrumentation tests. The Android adapter behavior is validated on API 35; API 19–22 runtime behavior is still not emulator-tested.
 
