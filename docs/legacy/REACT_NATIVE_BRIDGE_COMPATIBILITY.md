@@ -90,7 +90,7 @@ The supplied APK was inspected without modifying it. Its SHA-256 matches the bas
 The JavaScript bundle `assets/index.android.bundle` is 4,313,700 bytes. Static string/call-site inspection shows the JS-facing Newman module is exported as `NewmanViewManager` and is referenced by conversation actions.
 
 Observed call-site semantics:
-- `sendQuery(text, isVoiceOrAlternateMode)` is called with text and a boolean; the returned promise is used to obtain a request ID. The exact native Java method declaration and Promise implementation still need bytecode-level confirmation.
+- `sendQuery(text, boolean)` is called with text and a boolean; the returned promise is used to obtain a request ID. The boolean's semantic meaning is not established by the inspected call sites, so do not name it voice/alternate mode or map it into policy until the native declaration and JS call paths are fully traced.
 - `onUserManualInput()` is called with no arguments from the text-input-focus handler. This is a focus/UI notification, not a text submission.
 - `cancelListening()` is called with no arguments.
 - `resetConversation()` is called with no arguments.
