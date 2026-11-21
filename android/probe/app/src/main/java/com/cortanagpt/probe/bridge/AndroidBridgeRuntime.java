@@ -53,7 +53,7 @@ public final class AndroidBridgeRuntime implements AutoCloseable {
         ChatHttpGateway gateway = new ChatHttpGateway(endpointUrl, worker, connectionFactory,
                 connectTimeoutMillis, readTimeoutMillis);
         BridgeCore core = new BridgeCore(gateway, new MainLooperTimeoutScheduler(),
-                new AndroidMainThreadDispatcher(), requestTimeoutMillis);
+                mainDispatcher, requestTimeoutMillis);
         this.conversationAdapter = new LegacyConversationAdapter(core, memoryProvider);
     }
 
