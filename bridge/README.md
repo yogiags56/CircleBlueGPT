@@ -148,3 +148,14 @@ The facade does not embed an endpoint, session token, provider key or React Nati
 
 API 35 instrumentation tests cover real HTTPS round-trip through the facade, legacy display mapping, main-looper delivery, close/cancel behavior, closed-state rejection and conversation reset. CI for the latest facade commit is pending.
 
+
+## Stage 004V-5 complete — Android runtime facade
+
+Android run #233 (`44904515691`) passed 56/56 host-JVM tests, APK assembly and 12/12 API 35 instrumentation tests. Backend run #206 (`44904515583`) passed 41/41 PostgreSQL/Redis tests.
+
+`AndroidBridgeRuntime` owns the background HTTP executor and wires the HTTPS gateway, BridgeCore, legacy adapter, main-looper timeout and callback dispatch. Its close operation is idempotent, cancels active requests before executor shutdown, and rejects later requests. The instrumentation suite verified real HTTPS through the runtime facade, legacy `view.displayText` mapping, main-thread callback delivery, close/cancel behavior, closed-state rejection and conversation reset.
+
+Artifact #14707482360; ZIP SHA-256 `268d9e49be7bd9a4e9ad29112692d80096467d9c538c372c98f67bc961b97839`. App and instrumentation APK hashes are recorded in `docs/PROJECT_STATUS.md` and `CHECKPOINT.md`.
+
+**Next stage (004V-6):** audit the original Cortana React Native runtime version and native-module registration conventions, then implement a matching text-only NativeModule in an isolated shell. Do not patch the original APK before compatibility is demonstrated.
+
