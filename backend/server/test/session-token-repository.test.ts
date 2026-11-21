@@ -71,7 +71,7 @@ test("refuses a second initial token after the first token has been revoked", as
   const sessionId = await createSession();
   try {
     const first = await repository.issueInitial(sessionId);
-    await repository.revokeSession(sessionId);
+    await repository.rotate(sessionId, first.accessToken);
     await assert.rejects(repository.issueInitial(sessionId), /SESSION_TOKEN_ALREADY_ISSUED/);
   } finally {
     await cleanupSession(sessionId);
@@ -125,7 +125,7 @@ test("session revocation invalidates every outstanding token", async () => {
   const sessionId = await createSession();
   try {
     const first = await repository.issueInitial(sessionId);
-    const second = await repository.rotate(sessionId);
+    const second = await repository.rotate(sessionId, first.accessToken);
     assert.equal(await repository.revokeSession(sessionId), true);
     assert.equal(await repository.revokeSession(sessionId), false);
     assert.equal(await repository.authenticate(first.accessToken), null);
