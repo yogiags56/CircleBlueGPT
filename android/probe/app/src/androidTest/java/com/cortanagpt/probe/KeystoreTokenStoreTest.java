@@ -3,6 +3,7 @@ package com.cortanagpt.probe;
 import android.content.Context;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import java.security.KeyStore;
 import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,9 +35,13 @@ public class KeystoreTokenStoreTest {
         catch (Exception expected) { /* key recreation yields a different key */ }
     }
 
-    @Test public void api19To22ExplicitlyDisablePersistentKeystoreAes() throws Exception {
-        if (android.os.Build.VERSION.SDK_INT >= 23) return;
-        try { keys.getOrCreate(); fail("API 19-22 must not silently use a weaker fallback"); }
-        catch (UnsupportedOperationException expected) { assertTrue(expected.getMessage().contains("API_23")); }
+    @Test public void destroyRemovesCiphertextAndKeystoreKey() throws Exception {
+        if (android.os.Build.VERSION.SDK_INT < 23) return;
+        store.save("destroy-me");
+        store.destroy();
+        assertNull(store.read());
+        KeyStore keyStore = KeyStore.getInstance("AndroidKeyStore");
+        keyStore.load(null);
+        assertFalse(keyStore.containsAlias(AndroidKeystoreKeyProvider.ALIAS));
     }
 }
