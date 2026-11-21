@@ -16,6 +16,6 @@ allprojects {
         mavenCentral()
         jcenter()
         // React Native <= 0.70 publishes its Android Maven artifacts inside npm.
-        maven { url "$rootDir/../../node_modules/react-native/android" }
+        maven { url "$rootDir/node_modules/react-native/android" }
     }
 }
