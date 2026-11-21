@@ -31,7 +31,7 @@ test("issues opaque access token and stores only its SHA-256 hash", async () => 
   try {
     const issued = await repository.issueInitial(sessionId);
     assert.match(issued.accessToken, /^[A-Za-z0-9_-]{43}$/);
-    assert.equal(issued.tokenType, "DPoP");
+    assert.equal(issued.tokenType, "CortanaPoP");
     assert.deepEqual(issued.scopes, ["chat:send", "session:revoke"]);
     const stored = await pool.query(
       "SELECT token_hash, expires_at FROM session_tokens WHERE token_id = $1",
