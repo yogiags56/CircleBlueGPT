@@ -290,3 +290,10 @@
 - Metro still failed with `Cannot read properties of undefined (reading 'transformFile')`. This is a secondary symptom of the Metro transformer failing during initialization; current Metro guidance and issue reports associate this symptom with using a Node runtime too new for an older Metro stack.
 - Changed the compatibility workflow from Node 20 to Node 16.20.2, and enabled Yarn `--ignore-engines` so newer metadata/transitive packages do not block installation solely on declared engine ranges. Gradle remains JDK 8; Android SDK tools remain JDK 17.
 - React Native remains 0.59.4; Metro preset 0.59.0 and Babel core 7.16.5 are build-only adjustments. Next run must verify Metro startup and bundle completion.
+
+### Stage 004V-7 CI iteration 6 — APK compile passed; emulator JDK corrected (2026-11-22)
+
+- Workflow run #48 (`44935062656`) successfully generated the RN 0.59.4 JS bundle and assembled the compatibility debug APK using AGP 3.3.1 / Gradle 4.10.1 / JDK 8.
+- API 28 emulator step then failed before launch because the emulator action's Android SDK tools were executed under JDK 8. The log reports `UnsupportedClassVersionError` for class-file version 55 (JDK 11+) while current Java was class-file version 52 (JDK 8); Android command-line tools require JDK 17 in this environment.
+- Added a JDK 17 switch after APK assembly and before emulator startup. The legacy Gradle build remains on JDK 8; emulator/SDK tools run on JDK 17.
+- APK assembly is now validated; NativeModule runtime, version parity, Promise and event delivery remain pending emulator verification.
