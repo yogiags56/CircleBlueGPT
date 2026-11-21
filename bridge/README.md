@@ -131,3 +131,20 @@ Twelve deterministic adapter JVM tests cover request mapping, selected memory, i
 **Stage 004V-4 complete:** the legacy text adapter is validated in the isolated probe. It is still not a React Native NativeModule and has not been connected to the original Cortana APK.
 
 **Next stage (004V-5):** add an Android bridge facade that owns the worker executor, timeout scheduler, callback dispatcher, HTTPS gateway and legacy adapter with explicit startup/shutdown semantics.
+
+## Stage 004V-5 — Android bridge runtime facade (CI pending)
+
+`AndroidBridgeRuntime` is the Android composition root:
+- Owns a single-thread background ExecutorService for HTTP work.
+- Constructs `ChatHttpGateway` with an injected HTTPS endpoint and connection factory.
+- Wires `BridgeCore` with the main-looper timeout scheduler and callback dispatcher.
+- Wraps `LegacyConversationAdapter` so all public listener callbacks are delivered on Android's main looper.
+- Exposes text query/manual input, conversation ID, cancel, reset and local force-reset operations.
+- Rejects calls after close with `BRIDGE_CLOSED`; voice/cards/skills remain explicitly unsupported.
+- `close()` is idempotent, cancels active conversation work before `shutdownNow()`, and does not block the UI thread.
+- Production constructor uses platform default TLS validation. A custom connection factory is exposed only for test-only certificate trust in instrumentation.
+
+The facade does not embed an endpoint, session token, provider key or React Native dependency. It is not yet wired into the original Cortana APK.
+
+API 35 instrumentation tests cover real HTTPS round-trip through the facade, legacy display mapping, main-looper delivery, close/cancel behavior, closed-state rejection and conversation reset. CI for the latest facade commit is pending.
+
