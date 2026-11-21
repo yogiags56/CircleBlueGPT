@@ -10,7 +10,9 @@
 | 004O | Native bridge and AES-GCM platform-neutral prototypes | JVM tests historically reported; revalidation pending |
 | 004P | HTTP transport prototype | JVM tests historically reported; revalidation pending |
 | 004Q | Retry/cancellation hardening and Android probe scaffold | JVM suite has 13 checks; cancellation test showed timing sensitivity during 004R rerun |
-| 004R | Repository bootstrap, deterministic tests, Android toolchain readiness | In progress |
+| 004R | Repository bootstrap, deterministic tests, Android toolchain readiness | Completed; CI toolchain validated |
+| 004S | Android Keystore probe, API policy tests and secure session destruction | Completed; JVM policy task and 3 API 35 instrumentation tests passed |
+| 004T | Anonymous installation session protocol and threat model | Protocol proposal committed; security review and implementation pending |
 
 ## Exit criteria for 004R
 
@@ -22,8 +24,8 @@
 
 ## Later milestones
 
-- 004S: Android probe build and emulator/device validation.
-- 004T: anonymous session protocol and backend implementation with durable idempotency.
-- 004U: bridge integration against mock backend.
+- 004U: implement the reviewed anonymous session backend and durable idempotency.
+- 004V: bridge integration against mock backend.
+- 004W: controlled persona/UI integration assessment.
 - 004V: controlled persona/UI integration assessment.
 - 005: end-to-end MVP only after all preceding gates pass.
