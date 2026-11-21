@@ -172,6 +172,15 @@
 - Instrumentation APK: 2,331,655 bytes; SHA-256 `21e2753de65e82657f717cf7b31660f9883149a9c48f865a3062a8324ed8f926`.
 - ZIP and both APK archives passed integrity checks. Artifact expires 2026-12-05 per GitHub metadata.
 
+## Stage 004V-6 React Native NativeModule compatibility audit (in progress)
+
+- Static APK audit confirms legacy React Native bridge symbols: `ReactContextBaseJavaModule`, `ReactInstanceManager`, `ReactRootView`, `CatalystInstanceImpl`, `NativeModuleRegistry`, `JavaScriptExecutorFactory`, `JSCExecutor` and `DeviceEventManagerModule.RCTDeviceEventEmitter`.
+- ARM64 and ARMv7 include `libreactnativejni.so`, `libjscexecutor.so` and `libjsc.so`; no `libhermes.so` was found.
+- A TurboModule diagnostic string exists but does not prove TurboModule usage.
+- Exact React Native semantic version was not exposed by APK metadata/strings. Do not guess the `react-android` version or compile against arbitrary RN.
+- Audit and integration requirements are documented in `docs/legacy/REACT_NATIVE_BRIDGE_COMPATIBILITY.md`.
+- Next: recover the original RN dependency version or pin it through class/native fingerprinting; then build a minimal isolated RN shell and verify no-op NativeModule registration/events before connecting AndroidBridgeRuntime.
+
 ## Security and release constraints
 
 - Keep provider credentials exclusively on the backend; never embed provider API keys in the APK.
