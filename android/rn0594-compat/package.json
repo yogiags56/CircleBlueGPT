@@ -9,5 +9,8 @@
   },
   "resolutions": {
     "metro-react-native-babel-preset": "0.59.0"
+  },
+  "devDependencies": {
+    "@babel/core": "7.16.5"
   }
 }
