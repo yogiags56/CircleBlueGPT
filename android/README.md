@@ -13,7 +13,9 @@ The isolated probe lives in the historical Stage 004Q recovery workspace and is 
 
 ## Build prerequisites
 
-Use Android Studio or a compatible Android Gradle Plugin + Gradle + Android SDK toolchain. The JDK running Gradle must satisfy the selected AGP version; Android's current documentation lists JDK 17 as the minimum for AGP 8.x and AGP 9.4.0. Keep the Java source/target compatibility of the probe separate from the JDK used to run Gradle.
+Use Android Studio or a compatible Android Gradle Plugin + Gradle + Android SDK toolchain. This project pins Android Gradle Plugin 8.7.3, Gradle 8.9, compileSdk 35 and Java 8 source/target compatibility. AGP 8.7 requires Gradle 8.9 and JDK 17; the JDK running Gradle is separate from the Java source/target compatibility of the app.
+
+A GitHub Actions workflow is provided at `.github/workflows/android-probe.yml`. It installs JDK 17, Gradle 8.9 and Android SDK API 35, then attempts both the debug app and instrumentation APK builds on pushes/PRs affecting the probe. The workflow has been committed but has not yet run successfully; its first CI result is the next build gate.
 
 The probe has not yet been built in this environment. Do not claim an APK was produced until a clean build output and its SHA-256 are recorded.
 
