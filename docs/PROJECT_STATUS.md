@@ -107,6 +107,15 @@
 - Instrumentation APK: 1,679,317 bytes; SHA-256 `217d27bbc81b425f9a7ad483316930c96900fff0d879967799d8411186354c31`.
 - ZIP and both APK archives passed integrity checks. Artifact retention expires 2026-12-05 per GitHub metadata.
 
+## Stage 004V-3B real local HTTPS mock-server integration (CI in progress)
+
+- Added test-only dependencies `okhttp3:mockwebserver:4.12.0` and `okhttp3:okhttp-tls:4.12.0`.
+- Added `ChatHttpGatewayTlsIntegrationTest` using a generated local test certificate and a trust configuration limited to that certificate.
+- Tests cover a real TLS handshake and POST round-trip, request path/headers/body, redirect rejection, HTTP 503 generic failure, delayed-body read timeout, oversized body, in-flight cancellation, and rejection of an untrusted self-signed certificate by the platform default trust store.
+- This is a test-only TLS trust configuration; production default factory still uses platform certificate validation.
+- Android run #167 (`44902414304`) has passed 44 host-JVM tests and APK assembly; API 35 emulator instrumentation is still running. Backend run #153 (`44902414337`) passed typecheck/build, migration idempotency and 41/41 tests.
+- Do not mark 004V-3B complete until Android run #167 finishes successfully and the local HTTPS integration tests are confirmed in logs.
+
 ## Security and release constraints
 
 - Keep provider credentials exclusively on the backend; never embed provider API keys in the APK.
