@@ -11,8 +11,8 @@
 | 004P | HTTP transport prototype | JVM tests historically reported; revalidation pending |
 | 004Q | Retry/cancellation hardening and Android probe scaffold | JVM suite has 13 checks; cancellation test showed timing sensitivity during 004R rerun |
 | 004R | Repository bootstrap, deterministic tests, Android toolchain readiness | Completed; CI toolchain validated |
-| 004S | Android Keystore probe, API policy tests and secure session destruction | Completed; JVM policy task and 3 API 35 instrumentation tests passed |
-| 004T | Anonymous session protocol, threat model and backend foundation | Protocol/design committed; Fastify + PostgreSQL/Redis foundation and durable idempotency primitive implemented; 17/17 CI tests passed; P-256 and Redis proof-replay primitives added, fresh CI pending; session issuer still pending security review |
+| 004S | Android Keystore probe, API policy tests and secure session destruction | Completed; latest verified run #58 passed JVM policy tests and 3 API 35 instrumentation tests; run #64 is rechecking latest branch changes |
+| 004T | Anonymous session protocol, threat model and backend foundation | Fastify + PostgreSQL/Redis, idempotency, P-256 verification, Redis replay guard and one-time enrollment challenge repository implemented; backend CI run #67 passed 34/34 tests; independent protocol review remains a gate before HTTP enrollment/session endpoints |
 
 ## Exit criteria for 004R
 
