@@ -66,6 +66,10 @@ public final class LegacyConversationAdapter {
     /** NewmanViewModule.sendQuery adapter. Replaces and cancels any prior active text query. */
     public String sendQuery(String text, Listener listener) {
         if (listener == null) throw new IllegalArgumentException("MISSING_LISTENER");
+        if (text == null || text.trim().length() == 0 || text.length() > 16384) {
+            notifyError(listener, "INVALID_USER_INPUT");
+            return null;
+        }
 
         List<String> selectedMemory = Collections.emptyList();
         try {
