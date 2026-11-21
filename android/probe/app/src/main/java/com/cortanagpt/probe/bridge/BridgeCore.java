@@ -96,7 +96,7 @@ public final class BridgeCore {
         synchronized (lock) {
             if (state.terminal) return;
             state.terminal = true;
-            active.remove(state.request.getRequestId(), state);
+            if (active.get(state.request.getRequestId()) == state) active.remove(state.request.getRequestId());
         }
         if (outcome == Outcome.SUCCESS) state.listener.onSuccess(response);
         else state.listener.onFailure("GATEWAY_REQUEST_FAILED");
