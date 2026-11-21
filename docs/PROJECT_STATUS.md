@@ -1,7 +1,7 @@
 # Project status
 
 **Snapshot:** 2026-11-21  
-**Current stage:** 004V-3 — local mock-gateway transport design and integration  
+**Current stage:** 004V-3 — local/mock HTTPS transport; corrected CI validation in progress  
 **Overall status:** legacy reverse-engineering and platform-neutral prototypes exist; the Android security probe now builds and passes API 35 emulator instrumentation tests. Cortana UI/runtime integration remains unvalidated.
 
 ## Verified baseline
@@ -87,6 +87,18 @@
 - Added API 35 instrumentation tests for Android main-looper dispatch and timeout delivery.
 - Android run #120 (`44900668260`) completed successfully: 20 host-JVM tests passed, APK assembly succeeded, and all 5 API 35 emulator instrumentation tests passed. Artifact #14706200956 was downloaded; ZIP and both APK archives passed integrity checks and their SHA-256 values were recorded above.
 - Latest backend run #119 (`44900668259`) completed typecheck/build, migration idempotency and 41/41 PostgreSQL/Redis tests successfully.
+
+## Stage 004V-3 local/mock HTTPS gateway (in progress)
+
+- Added `ChatProtocolCodec` for the proposed v1 request/response contract. It rejects duplicate/unknown fields, unsupported versions, mismatched request IDs, empty/oversized text, malformed/trailing JSON and invalid UTF-8.
+- Bounds: 64 KiB encoded request, 256 KiB response body, 65,536 response-text characters.
+- Added `ChatHttpGateway` with injected endpoint, background Executor and HTTPS connection factory. Default factory uses platform HTTPS/TLS certificate validation.
+- Transport sets connect/read timeouts, fixed-length POST, Content-Type/Accept/Idempotency-Key, disables redirects and accepts only HTTP 200. Both Content-Length and streaming reads are bounded.
+- Cancellation/completion use one atomic state; cancellation disconnects active connection best-effort and suppresses late callbacks.
+- No auth header/session token, production URL, provider key, retry or backend chat endpoint is included. Executor must be background; network I/O must not run on main thread.
+- Android run #152 (`44901611627`) found 1 failing JVM test among 37: strict Gson reader reported extra top-level JSON as malformed rather than the expected trailing-data code. Corrected in commit `6e46c5a0d2b5c0ab3eac851d74720e9c7c70f30b`.
+- Corrected Android run #154 (`44901777496`): host-JVM test task and APK assembly passed; API 35 emulator instrumentation is still in progress. Do not mark Stage 004V-3 complete until the run finishes successfully.
+- Backend run #142 (`44901777488`) passed typecheck/build, migration idempotency and infrastructure integration tests.
 
 ## Security and release constraints
 
