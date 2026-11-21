@@ -235,3 +235,10 @@
 - Added `docs/legacy/REACT_NATIVE_RUNTIME_FINGERPRINT.md` with evidence, native corroboration and reproducible verification.
 - Do not add RN 0.59.4 directly to the current compileSdk 35 / Gradle 8.9 probe yet. Build an isolated legacy-compatible shell first; verify Maven resolution, native version parity, no-op NativeModule registration, Promise, event emitter and lifecycle.
 - Native DEX confirms legacy Bridge APIs and Promise; ARM64/ARMv7 ship JSC and React Native JNI libraries. No Hermes library found.
+
+### Stage 004V-6A validation — Android run #275 (2026-11-21)
+
+- Android run #275 (`44911443963`) completed successfully on commit `6e3422d`: host-JVM unit-test task passed, debug and instrumentation APKs assembled, and all 12 API 35 emulator instrumentation tests completed successfully.
+- Artifact #14710076733 (`cortanagpt-probe-apks.zip`) uploaded; ZIP SHA-256 `03cfc5d97179712845c99a4e78602df3b27ec7c8b3fb6f941809f6d3d29db1ad`.
+- Backend run #240 (`44911443976`) also completed successfully.
+- This validates the metadata catalog and corrected 23/25 family counts. It does not validate the separate RN 0.59.4 compatibility shell, which has not yet been created.
