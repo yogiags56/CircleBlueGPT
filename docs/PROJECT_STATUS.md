@@ -225,3 +225,13 @@
 - Added six JVM tests for inventory totals (48 assets, 1,846 frames, 2,502,596 bytes), family counts, exact metadata, greeting variants, path traversal rejection and immutability.
 - CI triggered by the code commits must pass before this slice is considered validated.
 - React Native exact-version pinning remains blocked on original dependency metadata or class/native ABI fingerprinting; do not add an arbitrary RN dependency.
+
+### Stage 004V-6B — React Native 0.59.4 fingerprint recovered (2026-11-21)
+
+- Re-uploaded APK SHA-256 again matches the immutable reference baseline.
+- Recovered exact JS package version from `assets/index.android.bundle`: Metro module 98 declares `{major:0, minor:59, patch:4, prerelease:null}`; exact object occurs once at byte offset 171,370.
+- Metro module 97 reads `PlatformConstants.reactNativeVersion`, enabling native/JS parity verification during shell startup.
+- RN target is **0.59.4**; the earlier claim that exact RN version was unknown is superseded.
+- Added `docs/legacy/REACT_NATIVE_RUNTIME_FINGERPRINT.md` with evidence, native corroboration and reproducible verification.
+- Do not add RN 0.59.4 directly to the current compileSdk 35 / Gradle 8.9 probe yet. Build an isolated legacy-compatible shell first; verify Maven resolution, native version parity, no-op NativeModule registration, Promise, event emitter and lifecycle.
+- Native DEX confirms legacy Bridge APIs and Promise; ARM64/ARMv7 ship JSC and React Native JNI libraries. No Hermes library found.
