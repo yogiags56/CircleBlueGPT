@@ -25,6 +25,6 @@
 ## Later milestones
 
 - 004U: session-token repository primitives implemented and CI-tested; custom CortanaPoP scheme clarified as distinct from RFC 9449 DPoP. Obtain independent protocol review before adding public enrollment/session issuance, proof verification and revocation endpoints.
-- 004V: implement platform-neutral bridge core and deterministic fake-gateway tests; then connect Android against a local/mock backend before any reviewed session API.
+- 004V: platform-neutral Java request/response DTOs and one-terminal-result bridge core implemented; 8 fake-gateway lifecycle tests added. Initial CI exposed one invalid aggregate-memory fixture; corrected fixture is awaiting rerun. Next: pass JVM CI, then add timeout/dispatcher and local mock-gateway integration.
 - 004W: controlled Cortana UI/persona integration assessment using `docs/legacy/CORTANA_SHELL_RESTORATION_MAP.md` as the static adapter plan.
 - 005: end-to-end MVP only after all preceding gates pass.
