@@ -27,7 +27,7 @@
 - A pure-Java compatibility policy is covered by host-JVM unit tests for API 19, 22, 23 and 35. These tests verify the policy boundary; they are not a substitute for running Android on API 19–22.
 - Android instrumentation tests exercise ciphertext round-trip, key-deletion invalidation and session destruction on API 35.
 - Latest Android probe workflow run `44897661202` completed successfully: host-JVM API policy tests, APK assembly and all 3 API 35 emulator instrumentation tests passed.
-- Latest probe artifact ID `14705020325`; ZIP SHA-256 `fb9eedac18896803f869d4382623237d85e7fa8461bac013742323eb18aefd1f`. ZIP integrity verified; app APK 11,279 bytes (SHA-256 `20ea1b68964bf96aa724d6cfa775b1ea1ecbaf9b8d8f58010020977dc0545c31`) and instrumentation APK 1,679,118 bytes (SHA-256 `7534924930bcc2cb79d58df59ca5353ee8c7a4b4add3f697910f1779a75ad97b`).
+- Latest probe artifact ID `14705197305` from run #94; ZIP SHA-256 `df04f08ccf8aedb6b72a18b4266d6fe14b0c1aa979113971690de94304e20a88`. ZIP integrity verified; app APK 14,972 bytes (SHA-256 `13b4969587bc339407b16607b774c8db008ddbef703abf38b5d6a0ea6a537d73`) and instrumentation APK 1,679,113 bytes (SHA-256 `987102da35bc864a618e50cc2dc8d2be2d581947bdfe711e7a3647413d5cd807`).
 
 ## Stage 004S CI evidence
 
@@ -74,7 +74,7 @@
 - BridgeCore arbitrates one terminal success/failure/cancellation callback, rejects duplicate active request IDs and ignores late gateway callbacks after cancellation. Gateway is injected; no HTTP/auth/provider endpoint is wired.
 - Eight JVM bridge tests were added for DTO validation, immutable memory, success/failure, mismatched IDs, cancellation races, duplicate IDs, synchronous callbacks and generic error handling.
 - Initial Android CI run `44899084557` exposed a faulty aggregate-memory test fixture (one item exceeded the per-item cap); the fixture was corrected to five individually valid 1,700-character items.
-- Corrected Android run `44899189690` passed the host-JVM unit-test task (4 Keystore policy tests + 8 bridge tests) and APK assembly. API 35 emulator instrumentation is still running; do not count this run as fully green until that step completes.
+- Corrected Android run `44899189690` completed successfully: 4 Keystore policy tests + 8 bridge JVM tests passed, APK assembly succeeded, and all 3 API 35 emulator instrumentation tests passed.
 - Listener callbacks are not marshalled to Android's main thread; the future Android UI adapter must dispatch them appropriately. No React Native NativeModule, streaming, event buffering, HTTP transport, timeout or production endpoint is implemented.
 
 ## Security and release constraints
