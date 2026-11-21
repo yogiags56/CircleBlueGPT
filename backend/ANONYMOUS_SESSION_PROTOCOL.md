@@ -106,7 +106,7 @@ Response:
   "protocolVersion": 1,
   "sessionId": "opaque-session-id",
   "accessToken": "opaque-random-secret",
-  "tokenType": "DPoP",
+  "tokenType": "CortanaPoP",
   "expiresInSeconds": 900,
   "serverTime": "RFC3339-UTC-timestamp",
   "scopes": ["chat:send", "session:revoke"]
@@ -119,8 +119,8 @@ Recommended initial access-token lifetime: 15 minutes. The token is bound server
 
 Every authenticated request includes:
 
-- `Authorization: DPoP {accessToken}`
-- `DPoP: {base64url-DER-ECDSA-signature}`
+- `Authorization: CortanaPoP {accessToken}`
+- `X-Cortana-Proof: {base64url-DER-ECDSA-signature}`
 - A client-generated unique `X-Request-ID` for chat requests.
 
 The DPoP signature covers this exact UTF-8 canonical message (LF line endings, no trailing LF):
@@ -144,7 +144,7 @@ Server requirements:
 - Reject malformed, oversized, expired, revoked or wrong-scope requests.
 - Do not redirect authenticated requests.
 
-This DPoP profile is a project-specific proposal, not a claim of full RFC 9449 compatibility.
+This is a project-specific detached-signature proof format. It is **not RFC 9449 DPoP**, does not use the standardized DPoP JWT format, and must not be advertised as interoperable with RFC 9449. The `CortanaPoP` authorization scheme and `X-Cortana-Proof` header are proposal-only names pending independent protocol review.
 
 ## Chat request and durable idempotency
 
@@ -164,7 +164,7 @@ The server must enforce request-size, selected-memory-size, output-token and rat
 
 Rotation must not be confused with first-time enrollment or accept an unauthenticated challenge purpose.
 
-1. The client requests a rotation challenge using `POST /v1/enrollment/challenges` with `purpose: "rotate"`, the current `sessionId`, the current access token and a valid DPoP proof over that request.
+1. The client requests a rotation challenge using `POST /v1/enrollment/challenges` with `purpose: "rotate"`, the current `sessionId`, the current access token and a valid CortanaPoP proof over that request.
 2. The server verifies that the session is active and the current key proof is valid, then issues a short-lived challenge bound to that session and purpose.
 3. The client signs the challenge using the already-bound installation private key and submits it to `POST /v1/sessions/rotate` with the session ID, challenge ID, public-key thumbprint and signature.
 4. The server verifies the signature, confirms the submitted public key is the key already bound to the session, atomically consumes the challenge, issues a new token and revokes the previous token in one transaction.
@@ -173,7 +173,7 @@ Rotation does not silently replace a lost installation key. A separate reviewed 
 
 - **Renewal:** a successful authenticated rotation issues a new access token and revokes the previous token atomically.
 - **Key loss:** if the private key is unavailable, the old session cannot be renewed. The client starts a new enrollment; the old session expires naturally or is revoked through an available recovery mechanism. Do not invent a device identifier as a recovery secret.
-- **Revocation:** `DELETE /v1/sessions/current` requires a valid access token and DPoP proof. Revoke the session and all its tokens server-side.
+- **Revocation:** `DELETE /v1/sessions/current` requires a valid access token and CortanaPoP proof. Revoke the session and all its tokens server-side.
 - **Local logout:** clear token preferences and delete the local Keystore key. The existing probe's `destroy()` method is intended to provide this local destruction behavior.
 
 ## Error contract
@@ -198,7 +198,7 @@ Responses should include a correlation ID that is safe to expose; do not echo se
 - Persist challenge consumption, session state and idempotency records transactionally.
 - Store only a one-way hash of access tokens.
 - Encrypt sensitive server-side data at rest and restrict access to signing/provider secrets.
-- Redact authorization headers, DPoP values, private-key material and message content from logs.
+- Redact authorization headers, CortanaPoP proof values, private-key material and message content from logs.
 - Set explicit retention limits for challenges, replay IDs, idempotency records and operational metadata.
 - Apply per-IP, per-key and per-session quotas; anonymous enrollment must not become unlimited free provider access.
 - Provider errors are normalized; internal stack traces and provider credentials never reach clients.
@@ -219,6 +219,6 @@ Responses should include a correlation ID that is safe to expose; do not echo se
 ## Explicit non-claims
 
 - No endpoint in this document is live.
-- No backend implementation, database, provider adapter, deployment or production secret configuration exists yet.
+- Repository-level backend primitives and CI exist, but no public endpoint, production authentication boundary, provider adapter, deployment or production secret configuration exists yet.
 - The protocol has not undergone an independent cryptographic/security review.
 - Android API 19–22 enrollment behavior is intentionally unresolved and must not be enabled by a silent insecure fallback.
