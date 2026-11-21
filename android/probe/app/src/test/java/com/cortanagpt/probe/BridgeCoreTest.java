@@ -62,7 +62,9 @@ public class BridgeCoreTest {
             assertEquals("INVALID_INPUT_TEXT", expected.getMessage());
         }
         try {
-            new ChatRequest(ID, null, "hello", Arrays.asList(repeat("x", 8193)));
+            new ChatRequest(ID, null, "hello", Arrays.asList(
+                    repeat("a", 1700), repeat("b", 1700), repeat("c", 1700),
+                    repeat("d", 1700), repeat("e", 1700)));
             fail("oversized memory must be rejected");
         } catch (IllegalArgumentException expected) {
             assertEquals("MEMORY_CONTEXT_TOO_LARGE", expected.getMessage());
