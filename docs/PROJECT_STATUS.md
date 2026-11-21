@@ -271,6 +271,8 @@
 
 - Workflow run #24 (`44934502675`) passed SDK/JDK setup and dependency installation, but Metro still failed parsing Flow syntax in RN `Libraries/Blob/URL.js`.
 - Investigation of the exact failure pattern identifies the known old Metro Babel preset / modern Babel traversal incompatibility (Flow method parameter annotations are parsed as ordinary JS after a Babel traversal regression).
-- Added Yarn 1 and package-level resolutions for `@babel/core 7.16.5`, `@babel/preset-flow 7.16.5`, `@babel/runtime 7.16.5` and `@babel/traverse 7.16.7`; workflow now uses Yarn so resolutions are enforced.
+- The first Yarn attempt (run #29, `44934669969`) failed dependency installation because modern transitive packages declare Node >=18/20 and the workflow was still on Node 10. The run did not reach bundling.
+- Replaced the broad Babel traversal resolutions with a targeted Yarn resolution of `metro-react-native-babel-preset 0.59.0`, the Flow-parser fix used by later RN releases, while keeping React Native itself pinned at 0.59.4.
+- Switched the Metro build host to Node 20 to satisfy current transitive package engine declarations; Gradle remains on JDK 8 after Android SDK setup under JDK 17.
 - Added a lockfile gate: generated `yarn.lock` must be committed after the first successful dependency resolution to freeze all transitive packages.
 - Next run must prove the Metro bundle passes. Android compilation and emulator validation remain pending.
