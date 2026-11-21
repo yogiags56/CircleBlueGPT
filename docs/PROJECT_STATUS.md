@@ -283,3 +283,10 @@
 - Metro then failed at bundle startup with `Cannot read properties of undefined (reading 'transformFile')`. Yarn output showed the Metro transformer and preset peer dependencies were missing `@babel/core`.
 - Added explicit build dependencies `@babel/core 7.16.5` and `metro-react-native-babel-preset 0.59.0`, keeping the React Native runtime dependency itself at 0.59.4.
 - Next run must validate bundle generation; Gradle compile and API 28 emulator bridge checks remain pending.
+
+### Stage 004V-7 CI iteration 5 — legacy Metro Node runtime (2026-11-22)
+
+- Workflow run #45 (`44934939862`) passed SDK/JDK setup and Yarn install after explicitly adding Babel core and Metro preset dependencies.
+- Metro still failed with `Cannot read properties of undefined (reading 'transformFile')`. This is a secondary symptom of the Metro transformer failing during initialization; current Metro guidance and issue reports associate this symptom with using a Node runtime too new for an older Metro stack.
+- Changed the compatibility workflow from Node 20 to Node 16.20.2, and enabled Yarn `--ignore-engines` so newer metadata/transitive packages do not block installation solely on declared engine ranges. Gradle remains JDK 8; Android SDK tools remain JDK 17.
+- React Native remains 0.59.4; Metro preset 0.59.0 and Babel core 7.16.5 are build-only adjustments. Next run must verify Metro startup and bundle completion.
