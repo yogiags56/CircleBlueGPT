@@ -197,3 +197,7 @@ Workflow run #37 (`44934828118`) passed SDK/JDK setup and Yarn install on Node 2
 ## RN 0.59.4 shell CI iteration 5 — Node 16 Metro host (2026-11-22)
 
 Workflow run #45 (`44934939862`) passed SDK/JDK setup and Yarn install with explicit Babel core/preset dependencies, but Metro failed with `Cannot read properties of undefined (reading 'transformFile')`. This is a secondary Metro initialization symptom; older Metro stacks are known to fail under too-new Node runtimes. Switched Metro host from Node 20 to Node 16.20.2 and enabled Yarn `--ignore-engines` to bypass engine metadata on newer transitive packages. RN stays 0.59.4; Metro preset 0.59.0 and Babel core 7.16.5 are tooling-only. Next run must confirm bundle generation.
+
+## RN 0.59.4 shell CI iteration 6 — APK built, emulator JDK (2026-11-22)
+
+Workflow run #48 (`44935062656`) successfully installed JS deps, generated the React Native bundle and assembled the debug APK with AGP 3.3.1 / Gradle 4.10.1 / JDK 8. API 28 emulator step failed before launch: Android SDK command-line tool class `AndroidLocationsProvider` is class-file version 55, but JDK8 supports only version 52. Added a JDK17 switch after APK assembly and before emulator startup. Gradle remains on JDK8; emulator SDK tools use JDK17. Build is validated; JS/native runtime parity and NativeModule/Promise/event behavior remain pending.
