@@ -81,3 +81,28 @@ No provider metadata, tool call, arbitrary adaptive card or legacy action payloa
 4. Replace the no-op with the thin AndroidBridgeRuntime adapter.
 5. Test rotation/recreation, background/foreground, React context teardown, active request cancellation and main-thread event ordering.
 6. Only then assess a controlled merge with the Cortana UI/persona shell.
+
+## 7. Additional evidence from the supplied APK — 2026-11-21
+
+The supplied APK was inspected without modifying it. Its SHA-256 matches the baseline recorded in the project checkpoint:
+`c8c3192bc29057dfc398f4cb8fa3bfc549422373e0688a4c6de993f37a233d6c`.
+
+The JavaScript bundle `assets/index.android.bundle` is 4,313,700 bytes. Static string/call-site inspection shows the JS-facing Newman module is exported as `NewmanViewManager` and is referenced by conversation actions.
+
+Observed call-site semantics:
+- `sendQuery(text, isVoiceOrAlternateMode)` is called with text and a boolean; the returned promise is used to obtain a request ID. The exact native Java method declaration and Promise implementation still need bytecode-level confirmation.
+- `onUserManualInput()` is called with no arguments from the text-input-focus handler. This is a focus/UI notification, not a text submission.
+- `cancelListening()` is called with no arguments.
+- `resetConversation()` is called with no arguments.
+- `forceResetConnection()` is called in a narrow reset path after a guest-handoff response.
+- Additional methods `startListening`, `sendSkillEvent`, `onAdaptiveCardSubmit`, `logCardShown`, and commute/video-related methods exist in the bundle but remain outside the MVP allowlist.
+
+The bundle imports React Native `NativeEventEmitter` and registers listeners for Newman commute/CSDK state, query-text, response and error events. This is evidence of event-emitter usage in that part of the app; it does not establish that the basic text-query path needs all those events. The MVP should emit only the minimum request lifecycle/result events it actually consumes.
+
+The APK contains 48 persona PERS assets (24 `circle_*` and 24 `miantuan_*` files), totaling 2,502,596 bytes before extraction/decoding. This inventory is broader than the earlier 15-segment extraction note; the exact decoded animation mapping and playback states still require asset-format inspection. Do not replace the existing asset extraction record until the full PERS inventory is reconciled.
+
+Important correction to the bridge contract: `onUserManualInput()` is a no-argument focus hook. It must not be modeled as `onUserManualInput(text)` or submit a query. Query submission is the responsibility of `sendQuery(text, ...)`.
+
+## 8. Exact-version limitation remains
+
+The bundle evidence confirms the legacy Bridge/JSC architecture but still does not identify an exact React Native semantic version. Do not pin a Maven dependency based on Cortana app version, bundle size, or JSC presence alone. Continue with class/method and native ABI fingerprinting or recover build metadata from a trusted source.
