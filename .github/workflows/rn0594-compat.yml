@@ -1,0 +1,93 @@
+name: React Native 0.59.4 compatibility shell
+
+on:
+  pull_request:
+    paths:
+      - "android/rn0594-compat/**"
+      - ".github/workflows/rn0594-compat.yml"
+  push:
+    branches:
+      - "stage-004r/**"
+    paths:
+      - "android/rn0594-compat/**"
+      - ".github/workflows/rn0594-compat.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  legacy-android:
+    name: Build and launch RN 0.59.4 shell
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+
+      - name: Set up Node 10
+        uses: actions/setup-node@v4
+        with:
+          node-version: "10.24.1"
+          cache: npm
+          cache-dependency-path: android/rn0594-compat/package-lock.json
+
+      - name: Set up Gradle 4.10.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "4.10.1"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install legacy Android SDK packages
+        run: sdkmanager "platforms;android-28" "build-tools;28.0.3" "platform-tools"
+
+      - name: Install pinned JavaScript dependencies
+        working-directory: android/rn0594-compat
+        run: npm install --ignore-scripts --no-audit --no-fund
+
+      - name: Generate compatibility JS bundle
+        working-directory: android/rn0594-compat
+        run: |
+          mkdir -p app/src/main/assets
+          node node_modules/react-native/local-cli/cli.js bundle --platform android --dev false --entry-file index.js --bundle-output app/src/main/assets/index.android.bundle --assets-dest app/src/main/res/
+
+      - name: Assemble compatibility APK
+        working-directory: android/rn0594-compat
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Launch on API 28 emulator and verify bridge
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 28
+          target: default
+          arch: x86
+          profile: pixel_2
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            adb install android/rn0594-compat/app/build/outputs/apk/debug/app-debug.apk
+            adb shell am start -n com.cortanagpt.rn0594compat/.MainActivity
+            for i in $(seq 1 60); do
+              if adb logcat -d -s ReactNativeJS:V | grep -q "RN0594_NATIVE_PROMISE_OK:native-module-ready"; then
+                adb logcat -d -s ReactNativeJS:V
+                exit 0
+              fi
+              sleep 2
+            done
+            adb logcat -d -s ReactNativeJS:V
+            exit 1
+
+      - name: Upload compatibility APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: cortana-rn0594-compat-apk
+          path: android/rn0594-compat/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14
