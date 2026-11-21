@@ -30,10 +30,10 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Node 10
+      - name: Set up Node 20 for legacy Metro
         uses: actions/setup-node@v4
         with:
-          node-version: "10.24.1"
+          node-version: "20.19.0"
 
       - name: Install Yarn 1
         run: npm install --global yarn@1.22.22
