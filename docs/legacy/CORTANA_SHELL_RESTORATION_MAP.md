@@ -58,3 +58,18 @@ The current request/response DTO is documented in `docs/ARCHITECTURE.md`; it is 
 - No broad legacy permission restoration.
 - No production backend URL or GPT provider credentials in the APK.
 - No claim of a patched, installable or runtime-compatible original Cortana APK.
+
+## Stage 004V-4 adapter implementation status
+
+The isolated Android probe now contains `LegacyConversationAdapter` under `android/probe/app/src/main/java/com/cortanagpt/probe/bridge/`.
+
+- `sendQuery` and `onUserManualInput` create validated text-only `ChatRequest` objects.
+- Optional memory is supplied by an injected selector; the adapter itself does not read the entire local store.
+- Validated assistant text is mapped only to `LegacyMessage.view.displayText`.
+- `cancelListening`, `resetConversation` and `forceResetConnection` map to local lifecycle cancellation/reset; stale responses are ignored.
+- Voice input, adaptive-card submission and skill events are explicitly unsupported.
+- The adapter serializes submit/cancel/reset transitions and notifies listeners outside state locks to avoid orphaned requests during reentrant callbacks.
+- Twelve deterministic JVM tests have been added. Android run #202 (`44903707612`) is still in progress; do not treat the adapter as CI-validated until the workflow completes.
+
+This remains a platform-neutral compatibility adapter, not an actual React Native NativeModule. No original Cortana APK or React Native source has been modified.
+
