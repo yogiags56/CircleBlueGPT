@@ -49,7 +49,7 @@ The first TypeScript/Fastify scaffold is under `server/`.
 - `GET /health/ready` checks PostgreSQL and Redis independently and fails closed.
 - PostgreSQL initial schema proposal is in `server/db/001_initial_schema.sql`.
 - Local PostgreSQL and Redis services are defined in `server/docker-compose.yml`.
-- Automated unit/injection tests cover config validation and health/readiness behavior.
+- Automated tests cover config validation, health/readiness behavior, malformed/oversized bodies, PostgreSQL schema presence and Redis connectivity. CI provisions real PostgreSQL/Redis services and verifies migration idempotency.
 - GitHub Actions workflow `.github/workflows/backend-ci.yml` typechecks, tests and builds the backend.
 
 Local development:
@@ -60,8 +60,9 @@ cp .env.example .env
 docker compose up -d
 npm install
 npm run typecheck
-npm test
 npm run build
+npm run migrate
+npm test
 npm run dev
 ```
 
