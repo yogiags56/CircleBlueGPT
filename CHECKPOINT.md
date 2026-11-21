@@ -181,3 +181,7 @@ Compatibility shell remains **unvalidated**: no local build or Actions result ob
 ## RN 0.59.4 shell CI iteration 1 — SDK/JDK mismatch (2026-11-22)
 
 Workflow run #15 (`44934215889`) failed in `android-actions/setup-android@v4` before SDK packages, npm install, JS bundle or Gradle build. Its downloaded command-line tools 22.0 require JDK 17; the workflow had JDK 8 active for Gradle. Fixed workflow `.github/workflows/rn0594-compat.yml`: activate JDK 17 for Android SDK setup/install, then switch to JDK 8 before Gradle 4.10.1. This failure is environment bootstrap only and provides no signal on app compilation. Await next run.
+
+## RN 0.59.4 shell CI iteration 2 — Metro Babel preset (2026-11-22)
+
+Workflow run #20 (`44934341325`) passed JDK17 Android SDK setup, Android SDK 28 packages, JDK8 switch and npm install. Metro bundle step failed while parsing Flow syntax in RN `Libraries/Blob/URL.js` (unexpected punctuation token). Added `android/rn0594-compat/.babelrc` with `module:metro-react-native-babel-preset` to activate the RN-era Flow/Babel transform. Await next run; no APK compiled or emulator tests performed yet.
