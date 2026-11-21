@@ -32,10 +32,10 @@ or production endpoint is included.
 
 ## Local build
 
-Use JDK 8 and Node 10 for this historical toolchain:
+Use JDK 17 for current Android SDK command-line tools, then JDK 8 for Gradle 4.10.1. Use Node 10 and Yarn 1 for this historical toolchain:
 
 ```sh
-npm install --ignore-scripts --no-audit --no-fund
+yarn install --ignore-scripts --non-interactive
 mkdir -p app/src/main/assets
 node node_modules/react-native/local-cli/cli.js bundle \
   --platform android --dev false --entry-file index.js \
@@ -43,6 +43,8 @@ node node_modules/react-native/local-cli/cli.js bundle \
   --assets-dest app/src/main/res/
 gradle --no-daemon :app:assembleDebug
 ```
+
+The package manifest pins Babel's parser/traversal toolchain through Yarn resolutions. This avoids a known Flow parser regression in older Metro presets when modern Babel traversal versions are resolved. Commit the generated `yarn.lock` after the first successful dependency resolution to make the full transitive tree reproducible.
 
 ## Compatibility gates still open
 
