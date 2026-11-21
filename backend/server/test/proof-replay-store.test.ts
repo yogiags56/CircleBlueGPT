@@ -29,6 +29,15 @@ test("proof identifiers are isolated between sessions", async () => {
   assert.equal(await store.claim("session-B", jti, 300), true);
 });
 
+test("concurrent duplicate proof IDs have exactly one Redis claim winner", async () => {
+  const sessionId = "concurrent-session-" + randomUUID();
+  const jti = "concurrent-proof-" + randomUUID();
+  const results = await Promise.all(
+    Array.from({ length: 12 }, () => store.claim(sessionId, jti, 300))
+  );
+  assert.equal(results.filter(Boolean).length, 1);
+});
+
 test("invalid proof replay retention is rejected", async () => {
   await assert.rejects(store.claim("session", "proof", 0), /INVALID_REPLAY_TTL/);
   await assert.rejects(store.claim("session", "proof", 3601), /INVALID_REPLAY_TTL/);
