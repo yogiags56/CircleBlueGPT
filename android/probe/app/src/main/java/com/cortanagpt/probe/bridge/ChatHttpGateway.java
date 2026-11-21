@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.CodingErrorAction;
@@ -21,6 +22,19 @@ import javax.net.ssl.HttpsURLConnection;
 public final class ChatHttpGateway implements BridgeCore.Gateway {
     public interface ConnectionFactory {
         HttpsURLConnection open(URL url) throws IOException;
+    }
+
+    /** Uses the platform's default HTTPS implementation and certificate validation. */
+    public static ConnectionFactory defaultConnectionFactory() {
+        return new ConnectionFactory() {
+            @Override public HttpsURLConnection open(URL url) throws IOException {
+                URLConnection connection = url.openConnection();
+                if (!(connection instanceof HttpsURLConnection)) {
+                    throw new IOException("HTTPS_CONNECTION_REQUIRED");
+                }
+                return (HttpsURLConnection) connection;
+            }
+        };
     }
 
     public static final int DEFAULT_CONNECT_TIMEOUT_MS = 10000;
@@ -126,6 +140,7 @@ public final class ChatHttpGateway implements BridgeCore.Gateway {
                 current.setReadTimeout(readTimeoutMillis);
                 current.setRequestProperty("Content-Type", "application/json; charset=utf-8");
                 current.setRequestProperty("Accept", "application/json");
+                current.setRequestProperty("Accept-Encoding", "identity");
                 current.setRequestProperty("Idempotency-Key", request.getRequestId());
                 current.setFixedLengthStreamingMode(requestBody.length);
 
@@ -136,7 +151,7 @@ public final class ChatHttpGateway implements BridgeCore.Gateway {
                 if (isCancelled()) return;
 
                 int status = current.getResponseCode();
-                if (status < 200 || status >= 300) throw new IOException("HTTP_STATUS_REJECTED");
+                if (status != 200) throw new IOException("HTTP_STATUS_REJECTED");
                 if (current.getContentLength() > ChatProtocolCodec.MAX_RESPONSE_BYTES) {
                     throw new IOException("RESPONSE_BODY_TOO_LARGE");
                 }
