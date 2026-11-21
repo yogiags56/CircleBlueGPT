@@ -36,7 +36,6 @@ public final class AndroidKeystoreKeyProvider {
     }
 
     private static void requireSupportedApi() {
-        if (Build.VERSION.SDK_INT < 23) throw new UnsupportedOperationException(
-                "ANDROID_KEYSTORE_AES_GCM_REQUIRES_API_23; persistent local memory is disabled on API 19-22");
+        KeystoreApiPolicy.requireSupported(Build.VERSION.SDK_INT);
     }
 }
