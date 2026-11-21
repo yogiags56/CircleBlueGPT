@@ -259,3 +259,10 @@
 - First workflow run #15 (`44934215889`) failed before SDK installation or project compilation. Log evidence: `android-actions/setup-android@v4` downloaded command-line tools 22.0, which requires JDK 17, while the job had already switched to JDK 8 for Gradle 4.10.1.
 - Corrected workflow order: JDK 17 for Android SDK setup and SDK package installation, then switch to JDK 8 immediately before the legacy Gradle build.
 - This is an environment bootstrap failure, not evidence of a React Native or Java source compile failure. Re-run status is pending; no APK or runtime validation yet.
+
+### Stage 004V-7 CI iteration 2 — Metro Babel preset correction (2026-11-22)
+
+- After fixing the SDK/JDK ordering, workflow run #20 (`44934341325`) passed Android SDK setup, SDK 28 package installation, JDK 8 switch and npm dependency installation.
+- JS bundle generation then failed parsing Flow syntax in React Native's `Libraries/Blob/URL.js` (`Unexpected token ... expected ','`). This isolated the next issue to missing project Babel preset configuration, before Android compilation.
+- Added `android/rn0594-compat/.babelrc` selecting `module:metro-react-native-babel-preset`, matching the legacy Metro transformer setup.
+- Next workflow attempt must confirm bundle generation before Gradle compile and API 28 runtime tests. Native compatibility remains unvalidated.
