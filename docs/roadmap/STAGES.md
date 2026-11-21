@@ -25,6 +25,7 @@
 ## Later milestones
 
 - 004U: session-token repository primitives implemented and CI-tested; custom CortanaPoP scheme clarified as distinct from RFC 9449 DPoP. Obtain independent protocol review before adding public enrollment/session issuance, proof verification and revocation endpoints.
-- 004V: platform-neutral Java request/response DTOs and one-terminal-result bridge core implemented; all 8 bridge JVM tests plus 4 Keystore policy tests passed in Android run #94; APK assembly and all 3 API 35 emulator instrumentation tests passed; artifact #14705197305 was downloaded and ZIP/APK hashes verified. Next: add injectable timeout scheduler and callback dispatcher with deterministic race tests, then local mock-gateway integration.
+- 004V: platform-neutral Java request/response DTOs and one-terminal-result bridge core implemented; all 8 bridge JVM tests plus 4 Keystore policy tests passed in Android run #94; APK assembly and all 3 API 35 emulator instrumentation tests passed; artifact #14705197305 was downloaded and ZIP/APK hashes verified.
+- 004V-2: injectable timeout scheduler, callback dispatcher, Android main-looper adapters and deterministic lifecycle/race tests implemented. Android run #120 (`44900668260`) passed host-JVM tests and APK assembly; API 35 emulator instrumentation is still in progress. Backend run #119 (`44900668259`) passed 41/41 tests. Next: complete emulator validation, then local mock-gateway integration.
 - 004W: controlled Cortana UI/persona integration assessment using `docs/legacy/CORTANA_SHELL_RESTORATION_MAP.md` as the static adapter plan.
 - 005: end-to-end MVP only after all preceding gates pass.
