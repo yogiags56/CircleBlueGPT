@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import Fastify, { type FastifyInstance } from "fastify";
 import type { AppConfig } from "./config.js";
 import { registerHealthRoutes, type DependencyHealth } from "./health.js";
@@ -10,8 +11,8 @@ export function buildApp(config: AppConfig, dependencies: AppDependencies): Fast
     bodyLimit: config.maxBodyBytes,
     disableRequestLogging: true,
     trustProxy: false,
-    requestIdHeader: "x-request-id",
-    genReqId: () => crypto.randomUUID()
+    requestIdHeader: false,
+    genReqId: () => randomUUID()
   });
 
   registerHealthRoutes(app, dependencies);
