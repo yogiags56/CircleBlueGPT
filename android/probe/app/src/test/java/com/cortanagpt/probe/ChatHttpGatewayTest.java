@@ -13,6 +13,8 @@ import java.net.URL;
 import java.security.Principal;
 import java.security.cert.Certificate;
 import java.util.concurrent.Executor;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import org.junit.Test;
@@ -32,6 +34,17 @@ public class ChatHttpGatewayTest {
         void run() { if (task != null) task.run(); }
     }
 
+    private static final class ThreadExecutor implements Executor {
+        final CountDownLatch finished = new CountDownLatch(1);
+        @Override public void execute(final Runnable command) {
+            new Thread(new Runnable() {
+                @Override public void run() {
+                    try { command.run(); } finally { finished.countDown(); }
+                }
+            }).start();
+        }
+    }
+
     private static final class RecordingCallback implements BridgeCore.Callback {
         int successes;
         int failures;
@@ -47,6 +60,9 @@ public class ChatHttpGatewayTest {
         final ByteArrayOutputStream request = new ByteArrayOutputStream();
         boolean disconnected;
         int inputReads;
+        boolean blockInput;
+        final CountDownLatch inputEntered = new CountDownLatch(1);
+        final CountDownLatch releaseInput = new CountDownLatch(1);
 
         FakeHttpsConnection() throws Exception { super(new URL(ENDPOINT)); }
         @Override public void connect() { }
@@ -62,6 +78,15 @@ public class ChatHttpGatewayTest {
         @Override public OutputStream getOutputStream() { return request; }
         @Override public InputStream getInputStream() {
             inputReads++;
+            if (blockInput) {
+                inputEntered.countDown();
+                try {
+                    if (!releaseInput.await(5, TimeUnit.SECONDS)) throw new RuntimeException("test input wait timeout");
+                } catch (InterruptedException error) {
+                    Thread.currentThread().interrupt();
+                    throw new RuntimeException("test input interrupted");
+                }
+            }
             return new ByteArrayInputStream(response);
         }
         @Override public int getResponseCode() { return status; }
@@ -185,6 +210,21 @@ public class ChatHttpGatewayTest {
         assertEquals(0, f.openCalls);
         assertEquals(0, callback.successes);
         assertEquals(0, callback.failures);
+    }
+
+    @Test public void cancellationDuringInFlightReadSuppressesLateCallback() throws Exception {
+        ThreadExecutor executor = new ThreadExecutor();
+        Fixture f = new Fixture(executor);
+        f.connection.blockInput = true;
+        RecordingCallback callback = new RecordingCallback();
+        BridgeCore.Call call = f.gateway.send(request(), callback);
+        assertTrue("worker did not reach response read", f.connection.inputEntered.await(5, TimeUnit.SECONDS));
+        call.cancel();
+        f.connection.releaseInput.countDown();
+        assertTrue("worker did not finish", executor.finished.await(5, TimeUnit.SECONDS));
+        assertEquals(0, callback.successes);
+        assertEquals(0, callback.failures);
+        assertTrue(f.connection.disconnected);
     }
 
     @Test public void executorRejectionProducesGenericFailure() throws Exception {
