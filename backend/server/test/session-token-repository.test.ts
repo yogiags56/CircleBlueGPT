@@ -67,10 +67,11 @@ test("authenticates only an active unexpired token and returns its bound session
   }
 });
 
-test("refuses a second initial token while an active token already exists", async () => {
+test("refuses a second initial token after the first token has been revoked", async () => {
   const sessionId = await createSession();
   try {
-    await repository.issueInitial(sessionId);
+    const first = await repository.issueInitial(sessionId);
+    await repository.revokeSession(sessionId);
     await assert.rejects(repository.issueInitial(sessionId), /SESSION_TOKEN_ALREADY_ISSUED/);
   } finally {
     await cleanupSession(sessionId);
@@ -81,7 +82,7 @@ test("rotation revokes old token and makes only replacement token valid", async 
   const sessionId = await createSession();
   try {
     const first = await repository.issueInitial(sessionId);
-    const second = await repository.rotate(sessionId);
+    const second = await repository.rotate(sessionId, first.accessToken);
     assert.notEqual(first.accessToken, second.accessToken);
     assert.equal(await repository.authenticate(first.accessToken), null);
     assert.equal((await repository.authenticate(second.accessToken))?.sessionId, sessionId);
@@ -100,13 +101,16 @@ test("rotation revokes old token and makes only replacement token valid", async 
 test("concurrent rotations serialize and leave exactly one usable token", async () => {
   const sessionId = await createSession();
   try {
-    await repository.issueInitial(sessionId);
-    const rotated = await Promise.all([
-      repository.rotate(sessionId),
-      repository.rotate(sessionId)
+    const initial = await repository.issueInitial(sessionId);
+    const attempts = await Promise.allSettled([
+      repository.rotate(sessionId, initial.accessToken),
+      repository.rotate(sessionId, initial.accessToken)
     ]);
-    const valid = await Promise.all(rotated.map(token => repository.authenticate(token.accessToken)));
-    assert.equal(valid.filter(Boolean).length, 1);
+    assert.equal(attempts.filter(result => result.status === "fulfilled").length, 1);
+    assert.equal(attempts.filter(result => result.status === "rejected").length, 1);
+    const winningToken = attempts.find(result => result.status === "fulfilled");
+    assert.ok(winningToken && winningToken.status === "fulfilled");
+    assert.equal((await repository.authenticate(winningToken.value.accessToken))?.sessionId, sessionId);
     const rows = await pool.query(
       "SELECT COUNT(*)::int AS count FROM session_tokens WHERE session_id = $1 AND revoked_at IS NULL",
       [sessionId]
