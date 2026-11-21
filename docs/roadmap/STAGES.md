@@ -32,7 +32,7 @@
 - 004V-3C: Android instrumentation for real HTTPS gateway/TLS behavior with test-only certificate trust; no production endpoint or credentials.
 - 004V-4: implement a narrow legacy conversation adapter mapping NewmanViewModule text-query/reset/cancel semantics to BridgeCore and validated `view.displayText`; explicitly reject unsupported legacy skills.
 - 004V-5: build an Android bridge facade wiring the validated legacy conversation adapter to the HTTPS gateway with injected endpoint/executor and explicit lifecycle ownership.
-- 004V-6: static audit confirms legacy React Native Bridge/JSC, but exact RN version remains unpinned. Supplied APK bundle call sites confirm NewmanViewManager `sendQuery(text, boolean)`, no-argument `onUserManualInput()` focus hook, `cancelListening()`, `resetConversation()`, and limited `forceResetConnection()`. Corrected the adapter to treat manual input as focus notification, not text submission. NativeModule implementation remains blocked on RN version/API fingerprinting; persona inventory has 48 PERS files pending full decode/state mapping.
+- 004V-6: static audit confirms legacy React Native Bridge/JSC. Re-uploaded APK bundle identifies the exact JS package as **RN 0.59.4** (Metro version object); NewmanViewManager descriptors/call sites are recorded in `docs/legacy/REACT_NATIVE_BRIDGE_COMPATIBILITY.md`. Persona inventory/catalog covers all 48 PERS assets. Next: isolated RN 0.59.4 compatibility shell, native PlatformConstants parity check and no-op NativeModule/event lifecycle test.
 - 004W: controlled Cortana UI/persona integration assessment using `docs/legacy/CORTANA_SHELL_RESTORATION_MAP.md` as the static adapter plan.
 - 005: end-to-end MVP only after all preceding gates pass.
 
