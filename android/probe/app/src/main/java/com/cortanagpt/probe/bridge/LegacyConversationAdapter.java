@@ -136,9 +136,12 @@ public final class LegacyConversationAdapter {
         return pending == null ? null : requestId;
     }
 
-    /** NewmanViewModule.onUserManualInput adapter; text input shares the same validated path. */
-    public String onUserManualInput(String text, Listener listener) {
-        return sendQuery(text, listener);
+    /**
+     * NewmanViewModule.onUserManualInput is a focus notification from the text input.
+     * It does not submit a query; actual text submission uses sendQuery(text, ...).
+     */
+    public void onUserManualInput() {
+        // Intentionally no-op in the text-only bridge; retained as a lifecycle/UI hook.
     }
 
     /** NewmanViewModule.cancelListening adapter. A queued reply is discarded after cancellation. */
