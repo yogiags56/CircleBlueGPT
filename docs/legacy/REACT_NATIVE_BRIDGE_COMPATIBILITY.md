@@ -99,7 +99,7 @@ Observed call-site semantics:
 
 The bundle imports React Native `NativeEventEmitter` and registers listeners for Newman commute/CSDK state, query-text, response and error events. This is evidence of event-emitter usage in that part of the app; it does not establish that the basic text-query path needs all those events. The MVP should emit only the minimum request lifecycle/result events it actually consumes.
 
-The APK contains 48 persona PERS assets (24 `circle_*` and 24 `miantuan_*` files), totaling 2,502,596 bytes before extraction/decoding. This inventory is broader than the earlier 15-segment extraction note; the exact decoded animation mapping and playback states still require asset-format inspection. Do not replace the existing asset extraction record until the full PERS inventory is reconciled.
+The APK contains 48 persona PERS assets: 23 `circle_*` and 25 `miantuan_*` files, totaling 2,502,596 bytes. All embedded GIF payloads have been decoded and their frame counts checked against the PERS XML metadata. The exact mapping from these assets to runtime persona states, playback timing and transitions remains unverified. See `docs/legacy/CORTANA_PERSONA_ASSET_INVENTORY.md`.
 
 Important correction to the bridge contract: `onUserManualInput()` is a no-argument focus hook. It must not be modeled as `onUserManualInput(text)` or submit a query. Query submission is the responsibility of `sendQuery(text, ...)`.
 
