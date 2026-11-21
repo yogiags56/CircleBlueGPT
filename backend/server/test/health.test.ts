@@ -77,10 +77,11 @@ test("malformed JSON is returned as a safe client error", async () => {
 
 test("oversized JSON body is rejected with a stable error code", async () => {
   const app = buildApp(config, { database: async () => true, redis: async () => true });
+  app.post("/test/body", async () => ({ ok: true }));
   try {
     const response = await app.inject({
       method: "POST",
-      url: "/health/live",
+      url: "/test/body",
       headers: { "content-type": "application/json" },
       payload: JSON.stringify({ data: "x".repeat(2048) })
     });
