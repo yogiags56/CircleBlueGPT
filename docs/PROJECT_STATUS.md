@@ -297,3 +297,9 @@
 - API 28 emulator step then failed before launch because the emulator action's Android SDK tools were executed under JDK 8. The log reports `UnsupportedClassVersionError` for class-file version 55 (JDK 11+) while current Java was class-file version 52 (JDK 8); Android command-line tools require JDK 17 in this environment.
 - Added a JDK 17 switch after APK assembly and before emulator startup. The legacy Gradle build remains on JDK 8; emulator/SDK tools run on JDK 17.
 - APK assembly is now validated; NativeModule runtime, version parity, Promise and event delivery remain pending emulator verification.
+
+### Stage 004V-7 runtime bootstrap hardening — SoLoader (2026-11-22)
+
+- Added the RN-era `SoLoader.init(this, false)` call in `MainApplication.onCreate()` before the React Native host is first used. This is part of the standard legacy Android bootstrap and is required before native RN libraries are loaded.
+- Workflow run #54 (`44935272285`) has already passed JS bundle generation and APK assembly; its API 28 emulator gate is still running at last check. That run predates the SoLoader change. Workflow run #57 (`44935575432`) includes the SoLoader correction and is in progress.
+- Runtime verification remains gated on API 28 logs for native version parity, Promise resolve/reject and event delivery.
