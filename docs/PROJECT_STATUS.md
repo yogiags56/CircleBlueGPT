@@ -1,7 +1,7 @@
 # Project status
 
 **Snapshot:** 2026-11-21  
-**Current stage:** 004V-5 — Android bridge facade and session lifecycle integration; transport client and protocol codec validated  
+**Current stage:** 004V-5 — Android bridge runtime facade; CI pending; transport client and protocol codec validated  
 **Overall status:** legacy reverse-engineering and platform-neutral prototypes exist; the Android security probe now builds and passes API 35 emulator instrumentation tests. Cortana UI/runtime integration remains unvalidated.
 
 ## Verified baseline
@@ -153,6 +153,17 @@
 - App APK: 136,476 bytes; SHA-256 `45e1e5c00e69dab7d3289897737840b08a6728ec54135e378ccd9bbc06000b0b`.
 - Instrumentation APK: 2,329,596 bytes; SHA-256 `ef10e54a3f245e97885c9b1f6486495258b8503094c8a83e07064a1117acc537`.
 - ZIP and both APK archives passed integrity checks. Artifact expires 2026-12-05 per GitHub metadata.
+
+## Stage 004V-5 Android bridge runtime facade (CI in progress)
+
+- Added `AndroidBridgeRuntime` as the Android composition root for ChatHttpGateway, BridgeCore and LegacyConversationAdapter.
+- Owns a single-thread background ExecutorService; network I/O never runs on the UI thread.
+- Wires main-looper timeout scheduler and callback dispatcher; public listener callbacks are normalized onto the main looper.
+- Exposes text query/manual input, conversation ID, cancel/reset/force-reset and explicit unsupported voice/card/skill behavior.
+- `close()` is idempotent, cancels active conversation work before executor shutdown and rejects later calls with `BRIDGE_CLOSED`.
+- Production constructor uses platform default TLS validation; injected custom connection factory is available for test-only certificate trust.
+- Added API 35 instrumentation tests for runtime HTTPS round-trip, displayText mapping, main-thread delivery, active cancellation on close, closed-state rejection and conversation reset.
+- Latest facade code and instrumentation tests are committed; Android and backend CI results are pending. Do not mark 004V-5 complete until all Android stages pass.
 
 ## Security and release constraints
 
