@@ -78,7 +78,11 @@ public final class ChatProtocolCodec {
                 }
             }
             reader.endObject();
-            if (reader.peek() != JsonToken.END_DOCUMENT) throw new IOException("TRAILING_RESPONSE_DATA");
+            try {
+                if (reader.peek() != JsonToken.END_DOCUMENT) throw new IOException("TRAILING_RESPONSE_DATA");
+            } catch (MalformedJsonException trailingData) {
+                throw new IOException("TRAILING_RESPONSE_DATA");
+            }
         } catch (MalformedJsonException | EOFException | IllegalStateException | NumberFormatException error) {
             throw new IOException("MALFORMED_RESPONSE");
         }
