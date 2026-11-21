@@ -70,3 +70,18 @@ This is a project proposal, not an existing server/provider guarantee. Reject mi
 - Shipping a provider API key in the APK.
 - Replacing Cortana's visual identity with a generic chatbot UI.
 - Claiming the legacy APK is patched or runtime-compatible before a reproducible test proves it.
+
+## Android chat transport boundary (Stage 004V-3 proposal)
+
+The Android probe now has a strict protocol codec and an injectable HTTPS gateway. The endpoint URL and background executor are supplied by the host application; no production endpoint is compiled into the APK.
+
+- Request DTO: `protocolVersion`, `requestId`, optional `conversationId`, `input.text`, `context.selectedMemory`.
+- Response DTO: `protocolVersion`, matching `requestId`, `message.text`.
+- Request JSON limit: 64 KiB. Response body limit: 256 KiB. Response text limit: 65,536 characters.
+- The client requires HTTPS, uses the platform's default TLS certificate validation, disables redirects, accepts only HTTP 200, sets connect/read timeouts and an idempotency header, and rejects malformed UTF-8/JSON or request-ID mismatch.
+- Cancellation is best-effort: the client disconnects the active connection and suppresses late callbacks, but this does not prove server-side or provider execution stopped.
+- The transport has no Authorization header yet. Anonymous session authentication remains blocked on independent review of the custom CortanaPoP scheme.
+- The injected executor must perform network I/O off the Android main thread. The bridge callback dispatcher is separately responsible for returning terminal UI events to the main looper.
+
+This is a client-side transport implementation against an injected/mock endpoint, not evidence that a backend chat route exists or is deployed. No GPT provider integration is wired.
+
