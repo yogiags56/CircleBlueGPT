@@ -38,7 +38,8 @@ Request:
 
 ```json
 {
-  "protocolVersion": 1
+  "protocolVersion": 1,
+  "purpose": "enroll"
 }
 ```
 
@@ -56,7 +57,7 @@ Response:
 Server requirements:
 
 - Challenge expires after 120 seconds.
-- Challenge is bound to its intended purpose (`enroll` or `rotate`).
+- Challenge is bound to its intended purpose (`enroll` or `rotate`); enrollment requests explicitly set `purpose: "enroll"`. Rotation challenges require an active session and valid proof of possession for that session.
 - Challenge can be consumed once only, using an atomic state transition.
 - Apply IP/network abuse limits without requiring a stable user identity.
 
@@ -76,6 +77,8 @@ The thumbprint is SHA-256 over the RFC 7638 canonical JWK member serialization f
 ### 3. Complete enrollment
 
 `POST /v1/sessions`
+
+This endpoint is only for first-time enrollment. Rotation uses the separate authenticated flow below.
 
 Request:
 
@@ -157,7 +160,18 @@ The server must enforce request-size, selected-memory-size, output-token and rat
 
 ## Renewal, rotation and revocation
 
-- **Renewal:** request a fresh `rotate` challenge and sign it with the currently bound installation key. A successful rotation issues a new access token and revokes the previous token atomically.
+### Authenticated rotation flow
+
+Rotation must not be confused with first-time enrollment or accept an unauthenticated challenge purpose.
+
+1. The client requests a rotation challenge using `POST /v1/enrollment/challenges` with `purpose: "rotate"`, the current `sessionId`, the current access token and a valid DPoP proof over that request.
+2. The server verifies that the session is active and the current key proof is valid, then issues a short-lived challenge bound to that session and purpose.
+3. The client signs the challenge using the already-bound installation private key and submits it to `POST /v1/sessions/rotate` with the session ID, challenge ID, public-key thumbprint and signature.
+4. The server verifies the signature, confirms the submitted public key is the key already bound to the session, atomically consumes the challenge, issues a new token and revokes the previous token in one transaction.
+
+Rotation does not silently replace a lost installation key. A separate reviewed key-recovery protocol would be required for that.
+
+- **Renewal:** a successful authenticated rotation issues a new access token and revokes the previous token atomically.
 - **Key loss:** if the private key is unavailable, the old session cannot be renewed. The client starts a new enrollment; the old session expires naturally or is revoked through an available recovery mechanism. Do not invent a device identifier as a recovery secret.
 - **Revocation:** `DELETE /v1/sessions/current` requires a valid access token and DPoP proof. Revoke the session and all its tokens server-side.
 - **Local logout:** clear token preferences and delete the local Keystore key. The existing probe's `destroy()` method is intended to provide this local destruction behavior.
