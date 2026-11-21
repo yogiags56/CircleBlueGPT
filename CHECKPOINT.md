@@ -201,3 +201,7 @@ Workflow run #45 (`44934939862`) passed SDK/JDK setup and Yarn install with expl
 ## RN 0.59.4 shell CI iteration 6 — APK built, emulator JDK (2026-11-22)
 
 Workflow run #48 (`44935062656`) successfully installed JS deps, generated the React Native bundle and assembled the debug APK with AGP 3.3.1 / Gradle 4.10.1 / JDK 8. API 28 emulator step failed before launch: Android SDK command-line tool class `AndroidLocationsProvider` is class-file version 55, but JDK8 supports only version 52. Added a JDK17 switch after APK assembly and before emulator startup. Gradle remains on JDK8; emulator SDK tools use JDK17. Build is validated; JS/native runtime parity and NativeModule/Promise/event behavior remain pending.
+
+## RN 0.59.4 runtime bootstrap — SoLoader initialization (2026-11-22)
+
+Added `SoLoader.init(this, false)` to `MainApplication.onCreate()` before React Native host startup, matching the legacy RN Android bootstrap. Run #54 (`44935272285`) passed bundle and APK assembly; API28 emulator gate still running at last check and does not include this fix. Run #57 (`44935575432`) includes SoLoader and is in progress. Runtime parity/Promise/event checks remain unvalidated until emulator workflow succeeds.
