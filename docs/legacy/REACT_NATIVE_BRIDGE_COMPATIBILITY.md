@@ -103,9 +103,9 @@ The APK contains 48 persona PERS assets: 23 `circle_*` and 25 `miantuan_*` files
 
 Important correction to the bridge contract: `onUserManualInput()` is a no-argument focus hook. It must not be modeled as `onUserManualInput(text)` or submit a query. Query submission is the responsibility of `sendQuery(text, ...)`.
 
-## 8. Exact-version limitation remains
+## 8. Exact-version limitation — resolved for the JS bundle
 
-The bundle evidence confirms the legacy Bridge/JSC architecture but still does not identify an exact React Native semantic version. Do not pin a Maven dependency based on Cortana app version, bundle size, or JSC presence alone. Continue with class/method and native ABI fingerprinting or recover build metadata from a trusted source.
+The re-uploaded APK's JavaScript bundle directly identifies the embedded React Native package as **0.59.4**. See `docs/legacy/REACT_NATIVE_RUNTIME_FINGERPRINT.md` for the exact Metro module/version object and native corroboration. The JS package version is no longer an open question. Native parity must still be checked through `PlatformConstants.reactNativeVersion` in an isolated shell before declaring the Android Maven artifact fully matched.
 
 ## 9. Re-inspection of the re-uploaded APK — DEX method descriptors (2026-11-21)
 
@@ -137,3 +137,11 @@ Important bridge correction/refinement:
 - `onUserManualInput()` is exactly no-argument and remains a focus notification, not a query submission.
 
 This establishes the method-level ABI shape for the Newman module, but it does not establish an exact React Native release number. Do not pin a Maven artifact from these descriptors alone. Continue version fingerprinting using additional class/API and native-library evidence or recover original Gradle dependency metadata.
+
+## 10. React Native package version recovered — 2026-11-21
+
+The re-uploaded APK's bundle contains the exact version object `e.version={major:0,minor:59,patch:4,prerelease:null}` once, at byte offset 171,370 in `assets/index.android.bundle` (4,313,700 bytes). Metro module 97 reads `PlatformConstants.reactNativeVersion`; module 98 defines the JS-side version as 0.59.4. This directly establishes the embedded JavaScript `react-native` package version.
+
+Use RN 0.59.4 as the compatibility target. Do not add it directly to the current modern probe yet: the probe uses compileSdk 35 and Gradle 8.9, whereas RN 0.59.4 belongs to an older Android build ecosystem. First create an isolated compatibility shell, verify Maven/Gradle resolution, check native `PlatformConstants.reactNativeVersion` for parity, then register a no-op `ReactContextBaseJavaModule`, Promise path and event emitter. Keep that shell separate if its legacy Gradle/AGP requirements conflict with the current probe.
+
+See `docs/legacy/REACT_NATIVE_RUNTIME_FINGERPRINT.md` for reproducible APK evidence and integration gates.\n
