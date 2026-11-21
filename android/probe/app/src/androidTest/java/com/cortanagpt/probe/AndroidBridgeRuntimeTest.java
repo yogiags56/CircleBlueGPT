@@ -127,7 +127,7 @@ public class AndroidBridgeRuntimeTest {
 
     @Test public void closeCancelsActiveRequestAndDeliversOneMainThreadCancellation() throws Exception {
         try (TlsFixture tls = new TlsFixture()) {
-            tls.server.enqueue(new MockResponse().setBodyDelay(5, TimeUnit.SECONDS)
+            tls.server.enqueue(new MockResponse().setBodyDelay(2, TimeUnit.SECONDS)
                     .setBody("{\"protocolVersion\":1,\"requestId\":\"late\",\"message\":{\"text\":\"late\"}}"));
             AndroidBridgeRuntime runtime = tls.runtime();
             Listener listener = new Listener();
