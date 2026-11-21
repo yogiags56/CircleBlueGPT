@@ -145,7 +145,7 @@
 - Voice input, adaptive-card submission and legacy skill events return explicit unsupported errors in the text-only MVP.
 - Adapter serializes submit/cancel/reset transitions to avoid orphan requests during concurrent/reentrant callbacks; listener notifications occur outside its state locks.
 - Added 12 deterministic JVM tests for response mapping, memory selection, invalid input, cancellation/reset, replacement, reentrant callbacks, stale response suppression and unsupported legacy actions.
-- Android run #202 (`44903707612`) and backend run #180 (`44903707580`) are in progress. Do not mark 004V-4 complete until Android host-JVM, APK assembly and API 35 instrumentation all pass.
+- Initial Android run #202 (`44903707612`) failed Java compilation because `requestGeneration` was scoped inside a try block but referenced from its catch block. Fixed in commit `648643e822357e517e551076c33c88c73f7bd4a4`. Corrected Android run #209 (`44903854337`) and backend run #186 (`44903854393`) are in progress. Do not mark 004V-4 complete until Android host-JVM, APK assembly and API 35 instrumentation all pass.
 
 ## Security and release constraints
 
