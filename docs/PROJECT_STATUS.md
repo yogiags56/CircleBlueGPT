@@ -59,7 +59,8 @@
 - PostgreSQL/Redis connection wiring, a proposed initial schema and local Docker Compose services are present.
 - Unit tests cover configuration and health/readiness behavior.
 - Backend CI run #39 completed successfully: strict TypeScript typecheck and production build passed; the transactional PostgreSQL migration applied successfully and a second run correctly reported it already applied.
-- **17/17 automated tests passed** against CI PostgreSQL/Redis services.
+- Backend CI run `44893586430` completed successfully: strict TypeScript typecheck and production build passed; migration #001 applied and safely re-applied.
+- **26/26 automated tests passed** against CI PostgreSQL/Redis services.
 - Integration coverage includes schema verification, Redis PING, idempotency first-write/replay, body-hash conflict, concurrent duplicate requests, stored-response replay and invalid state transitions.
 - New unverified security primitives are now staged: strict P-256 public-JWK validation/RFC 7638 thumbprints/ECDSA-SHA256 verification, plus atomic Redis proof-ID replay claims. New tests cover these primitives and are awaiting a fresh CI result.
 - This validates the persistence primitive, not a complete chat endpoint or exactly-once external provider execution.
@@ -67,7 +68,7 @@
 
 ## Not yet verified
 - Real Android API 19–22 runtime behavior (the host-JVM tests validate only the compatibility policy).
-- Backend enrollment, anonymous session issuance, provider integration or durable idempotency.
+- Backend enrollment, anonymous session issuance and provider integration.
 - React Native bridge integration, original APK patching, signing or installation.
 - End-to-end conversation with a real GPT provider.
 
