@@ -266,3 +266,11 @@
 - JS bundle generation then failed parsing Flow syntax in React Native's `Libraries/Blob/URL.js` (`Unexpected token ... expected ','`). This isolated the next issue to missing project Babel preset configuration, before Android compilation.
 - Added `android/rn0594-compat/.babelrc` selecting `module:metro-react-native-babel-preset`, matching the legacy Metro transformer setup.
 - Next workflow attempt must confirm bundle generation before Gradle compile and API 28 runtime tests. Native compatibility remains unvalidated.
+
+### Stage 004V-7 CI iteration 3 — Babel traversal pin (2026-11-22)
+
+- Workflow run #24 (`44934502675`) passed SDK/JDK setup and dependency installation, but Metro still failed parsing Flow syntax in RN `Libraries/Blob/URL.js`.
+- Investigation of the exact failure pattern identifies the known old Metro Babel preset / modern Babel traversal incompatibility (Flow method parameter annotations are parsed as ordinary JS after a Babel traversal regression).
+- Added Yarn 1 and package-level resolutions for `@babel/core 7.16.5`, `@babel/preset-flow 7.16.5`, `@babel/runtime 7.16.5` and `@babel/traverse 7.16.7`; workflow now uses Yarn so resolutions are enforced.
+- Added a lockfile gate: generated `yarn.lock` must be committed after the first successful dependency resolution to freeze all transitive packages.
+- Next run must prove the Metro bundle passes. Android compilation and emulator validation remain pending.
