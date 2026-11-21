@@ -1,7 +1,7 @@
 # Project status
 
 **Snapshot:** 2026-11-21  
-**Current stage:** 004V-4 — legacy conversation adapter for NewmanViewModule; transport client and protocol codec validated  
+**Current stage:** 004V-5 — Android bridge facade and session lifecycle integration; transport client and protocol codec validated  
 **Overall status:** legacy reverse-engineering and platform-neutral prototypes exist; the Android security probe now builds and passes API 35 emulator instrumentation tests. Cortana UI/runtime integration remains unvalidated.
 
 ## Verified baseline
@@ -145,7 +145,14 @@
 - Voice input, adaptive-card submission and legacy skill events return explicit unsupported errors in the text-only MVP.
 - Adapter serializes submit/cancel/reset transitions to avoid orphan requests during concurrent/reentrant callbacks; listener notifications occur outside its state locks.
 - Added 12 deterministic JVM tests for response mapping, memory selection, invalid input, cancellation/reset, replacement, reentrant callbacks, stale response suppression and unsupported legacy actions.
-- Initial Android run #202 (`44903707612`) failed Java compilation because `requestGeneration` was scoped inside a try block but referenced from its catch block. Fixed in commit `648643e822357e517e551076c33c88c73f7bd4a4`. Corrected Android run #209 (`44903854337`) has passed the host-JVM test task (56 tests) and APK assembly; API 35 emulator instrumentation is still running. Backend run #186 (`44903854393`) completed successfully with typecheck/build, migration idempotency and 41/41 PostgreSQL/Redis tests. Do not mark 004V-4 complete until the emulator instrumentation step passes.
+- Initial Android run #202 (`44903707612`) failed Java compilation because `requestGeneration` was scoped inside a try block but referenced from its catch block. Fixed in commit `648643e822357e517e551076c33c88c73f7bd4a4`. Corrected Android run #209 (`44903854337`) completed successfully: 56/56 host-JVM tests, APK assembly and all 8/8 API 35 emulator instrumentation tests passed. Backend run #186 (`44903854393`) completed successfully with typecheck/build, migration idempotency and 41/41 PostgreSQL/Redis tests. Stage 004V-4 is complete.
+
+### Stage 004V-4 Android artifact — run #209
+
+- Artifact ID: `14706659543`; ZIP SHA-256: `17ce5f8d9f42f1ef85356edd7f741b6a63bd84192565bc6406e0cab1d99fa923`.
+- App APK: 136,476 bytes; SHA-256 `45e1e5c00e69dab7d3289897737840b08a6728ec54135e378ccd9bbc06000b0b`.
+- Instrumentation APK: 2,329,596 bytes; SHA-256 `ef10e54a3f245e97885c9b1f6486495258b8503094c8a83e07064a1117acc537`.
+- ZIP and both APK archives passed integrity checks. Artifact expires 2026-12-05 per GitHub metadata.
 
 ## Security and release constraints
 
