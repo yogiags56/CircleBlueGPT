@@ -31,5 +31,6 @@
 - 004V-3B: real local TLS mock-server integration suite added with generated test certificate and isolated test trust configuration (TLS round-trip, headers/body, redirect, 503, read timeout, oversized response, in-flight cancellation and default trust-store rejection). Android run #167 (`44902414304`) passed 44/44 host-JVM tests, APK assembly and 5/5 API 35 instrumentation tests; artifact #14706248982 downloaded and hashes/integrity verified. Backend run #153 (`44902414337`) passed 41/41. **Completed.** Next: 004V-3C Android runtime HTTPS gateway verification with test-only TLS trust.
 - 004V-3C: Android instrumentation for real HTTPS gateway/TLS behavior with test-only certificate trust; no production endpoint or credentials.
 - 004V-4: implement a narrow legacy conversation adapter mapping NewmanViewModule text-query/reset/cancel semantics to BridgeCore and validated `view.displayText`; explicitly reject unsupported legacy skills.
+- 004V-5: build an Android bridge facade wiring the validated legacy conversation adapter to the HTTPS gateway with injected endpoint/executor and explicit lifecycle ownership.
 - 004W: controlled Cortana UI/persona integration assessment using `docs/legacy/CORTANA_SHELL_RESTORATION_MAP.md` as the static adapter plan.
 - 005: end-to-end MVP only after all preceding gates pass.
