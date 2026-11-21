@@ -1,7 +1,7 @@
 # Project status
 
 **Snapshot:** 2026-11-21  
-**Current stage:** 004V-3B — real local/mock HTTPS server integration; transport client and protocol codec validated  
+**Current stage:** 004V-3C — Android runtime verification of real HTTPS gateway; transport client and protocol codec validated  
 **Overall status:** legacy reverse-engineering and platform-neutral prototypes exist; the Android security probe now builds and passes API 35 emulator instrumentation tests. Cortana UI/runtime integration remains unvalidated.
 
 ## Verified baseline
@@ -113,8 +113,14 @@
 - Added `ChatHttpGatewayTlsIntegrationTest` using a generated local test certificate and a trust configuration limited to that certificate.
 - Tests cover a real TLS handshake and POST round-trip, request path/headers/body, redirect rejection, HTTP 503 generic failure, delayed-body read timeout, oversized body, in-flight cancellation, and rejection of an untrusted self-signed certificate by the platform default trust store.
 - This is a test-only TLS trust configuration; production default factory still uses platform certificate validation.
-- Android run #167 (`44902414304`) has passed 44 host-JVM tests and APK assembly; API 35 emulator instrumentation is still running. Backend run #153 (`44902414337`) passed typecheck/build, migration idempotency and 41/41 tests.
-- Do not mark 004V-3B complete until Android run #167 finishes successfully and the local HTTPS integration tests are confirmed in logs.
+- Android run #167 (`44902414304`) completed successfully: 44/44 host-JVM tests, APK assembly and all 5/5 API 35 emulator instrumentation tests passed. Backend run #153 (`44902414337`) passed strict typecheck/build, migration idempotency and 41/41 tests. Stage 004V-3B is complete; the host JVM suite exercised real local TLS sockets using a test-only trust certificate.
+
+### Stage 004V-3B artifact — Android run #167
+
+- Artifact ID: `14706248982`; ZIP SHA-256: `cc1885e9bd1c48c6242c6f5d52e7acaa0a22746a13735884d5808314af67ac92`.
+- App APK: 133,950 bytes; SHA-256 `4c9b707f393eca328cea23801791941feb2f3fa5b83fe39f6e3397888b9e2451`.
+- Instrumentation APK: 1,679,316 bytes; SHA-256 `707f2bcb46e160c24f98b8d4c5f798f6fbdcf45418a5cce92003dff6afa27929`.
+- ZIP and both APK archives passed integrity checks. Artifact expires 2026-12-05 per GitHub metadata.
 
 ## Security and release constraints
 
@@ -129,6 +135,6 @@
 2. Promote and validate the platform-neutral BridgeCore, AES-GCM codec and HTTP transport source/tests from the recovery workspace when the exact files are available.
 3. Obtain independent cryptographic review of the custom CortanaPoP proof-of-possession protocol before composing the tested challenge, P-256, replay and token primitives into public enrollment/session endpoints. The repository-level session-token tests have passed 41/41 in CI.
 4. Complete API 35 emulator validation for Stage 004V-2 timeout/dispatcher adapters.
-5. Add a real local/mock HTTPS server integration suite for the HTTP gateway; current tests use an injected fake HttpsURLConnection and do not exercise a real TLS socket.
-6. Build the Android–GPT transport bridge against a mock backend.
+5. Add API 35 Android instrumentation coverage for the real HTTPS gateway using a test-only certificate/trust configuration; current TLS socket tests run on host JVM.
+6. Build the Android–GPT transport bridge against a mock backend and a clearly injected endpoint.
 7. Integrate the original Cortana UI/persona only after backend and bridge gates pass.
