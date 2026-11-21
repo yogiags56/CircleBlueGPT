@@ -112,3 +112,18 @@ Android run #167 (`44902414304`) completed successfully: 44/44 host-JVM tests, A
 **Stage 004V-3C complete:** Android API 35 instrumentation exercised the actual `ChatHttpGateway` against local HTTPS MockWebServer using test-only certificate trust. It verified TLS round-trip through BridgeCore, main-looper listener delivery, redirect rejection and cancellation during response read.
 
 **Next stage (004V-4):** add a platform-neutral legacy conversation adapter for the statically mapped NewmanViewModule text-query/reset/cancel surface. The adapter must produce only validated `view.displayText` messages and explicitly reject legacy skill/action events outside the MVP.
+
+## Stage 004V-4 — legacy conversation adapter (CI pending)
+
+`LegacyConversationAdapter` is a platform-neutral compatibility boundary for the statically mapped NewmanViewModule text conversation surface.
+
+- `sendQuery` and `onUserManualInput` create validated text-only ChatRequest instances.
+- An injected `SelectedMemoryProvider` chooses at most the bounded memory context; the adapter never exports the full local memory store.
+- Successful assistant text is mapped only to `LegacyMessage.view.displayText`, matching the legacy text display requirement.
+- `cancelListening`, `resetConversation` and `forceResetConnection` map to local lifecycle operations. Stale responses after replacement/reset are ignored.
+- Submission/cancel/reset transitions are serialized; user callbacks are invoked outside adapter state locks to support reentrant listener behavior.
+- `startListening`, `onAdaptiveCardSubmit` and `sendSkillEvent` explicitly return unsupported errors in the text-only MVP.
+- This is not a React Native NativeModule. It has no RN dependencies and does not modify the original Cortana APK.
+
+Twelve deterministic JVM tests cover request mapping, selected memory, invalid input, cancellation/reset, replacement, reentrant callbacks, stale response suppression and unsupported legacy actions. Corrected Android run #209 (`44903854337`) passed the host-JVM task (56 tests) and APK assembly; API 35 instrumentation is still in progress. Backend run #186 (`44903854393`) passed 41/41 tests.
+
