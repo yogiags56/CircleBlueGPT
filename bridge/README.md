@@ -125,5 +125,9 @@ Android run #167 (`44902414304`) completed successfully: 44/44 host-JVM tests, A
 - `startListening`, `onAdaptiveCardSubmit` and `sendSkillEvent` explicitly return unsupported errors in the text-only MVP.
 - This is not a React Native NativeModule. It has no RN dependencies and does not modify the original Cortana APK.
 
-Twelve deterministic JVM tests cover request mapping, selected memory, invalid input, cancellation/reset, replacement, reentrant callbacks, stale response suppression and unsupported legacy actions. Corrected Android run #209 (`44903854337`) passed the host-JVM task (56 tests) and APK assembly; API 35 instrumentation is still in progress. Backend run #186 (`44903854393`) passed 41/41 tests.
+Twelve deterministic adapter JVM tests cover request mapping, selected memory, invalid input, cancellation/reset, replacement, reentrant callbacks, stale response suppression and unsupported legacy actions. Corrected Android run #209 (`44903854337`) completed successfully: 56/56 host-JVM tests, APK assembly and 8/8 API 35 emulator instrumentation tests passed. Backend run #186 (`44903854393`) passed 41/41 tests. Artifact #14706659543 was downloaded and ZIP/APK hashes and integrity verified.
 
+
+**Stage 004V-4 complete:** the legacy text adapter is validated in the isolated probe. It is still not a React Native NativeModule and has not been connected to the original Cortana APK.
+
+**Next stage (004V-5):** add an Android bridge facade that owns the worker executor, timeout scheduler, callback dispatcher, HTTPS gateway and legacy adapter with explicit startup/shutdown semantics.
