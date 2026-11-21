@@ -59,10 +59,11 @@ test("readiness fails closed when a dependency is unavailable", async () => {
 
 test("malformed JSON is returned as a safe client error", async () => {
   const app = buildApp(config, { database: async () => true, redis: async () => true });
+  app.post("/test/body", async () => ({ ok: true }));
   try {
     const response = await app.inject({
       method: "POST",
-      url: "/health/live",
+      url: "/test/body",
       headers: { "content-type": "application/json" },
       payload: "{not-json"
     });
