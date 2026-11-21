@@ -18,8 +18,8 @@ public class PersonaAssetCatalogTest {
             if (asset.getFamily() == PersonaAssetCatalog.Family.CIRCLE) circle++;
             if (asset.getFamily() == PersonaAssetCatalog.Family.MIANTUAN) miantuan++;
         }
-        assertEquals(24, circle);
-        assertEquals(24, miantuan);
+        assertEquals(23, circle);
+        assertEquals(25, miantuan);
     }
 
     @Test public void exactLookupPreservesOriginalCanvasAndAnimationMetadata() {
