@@ -11,16 +11,54 @@ import static org.junit.Assert.*;
 
 public class BridgeCoreTest {
     private static final String ID = "request-id-00000001";
+    private static final long TIMEOUT_MS = 15000L;
+
+    private static final class FakeScheduler implements BridgeCore.TimeoutScheduler {
+        Runnable task;
+        int scheduleCalls;
+        int cancelCalls;
+        boolean throwOnSchedule;
+        @Override public BridgeCore.Cancellable schedule(Runnable task, long delayMillis) {
+            scheduleCalls++;
+            assertEquals(TIMEOUT_MS, delayMillis);
+            if (throwOnSchedule) throw new IllegalStateException("scheduler details");
+            this.task = task;
+            return new BridgeCore.Cancellable() {
+                @Override public void cancel() { cancelCalls++; }
+            };
+        }
+        void fire() {
+            if (task != null) task.run();
+        }
+    }
+
+    private static final class FakeDispatcher implements BridgeCore.CallbackDispatcher {
+        final List<Runnable> pending = new ArrayList<>();
+        boolean immediate = true;
+        boolean throwOnDispatch;
+        @Override public void dispatch(Runnable callback) {
+            if (throwOnDispatch) throw new IllegalStateException("dispatcher details");
+            if (immediate) callback.run();
+            else pending.add(callback);
+        }
+        void drain() {
+            List<Runnable> copy = new ArrayList<>(pending);
+            pending.clear();
+            for (Runnable callback : copy) callback.run();
+        }
+    }
 
     private static final class FakeGateway implements BridgeCore.Gateway {
         BridgeCore.Callback callback;
         int cancelCalls;
         boolean synchronous;
         boolean throwOnSend;
+        Runnable beforeReturn;
         @Override public BridgeCore.Call send(ChatRequest request, BridgeCore.Callback callback) {
             this.callback = callback;
             if (throwOnSend) throw new IllegalStateException("private gateway details");
             if (synchronous) callback.onSuccess(new ChatResponse(request.getRequestId(), "hello"));
+            if (beforeReturn != null) beforeReturn.run();
             return new BridgeCore.Call() {
                 @Override public void cancel() { cancelCalls++; }
             };
@@ -33,10 +71,29 @@ public class BridgeCoreTest {
         int cancellations;
         ChatResponse response;
         String errorCode;
-        @Override public void onSuccess(ChatResponse value) { successes++; response = value; }
-        @Override public void onFailure(String code) { failures++; errorCode = code; }
-        @Override public void onCancelled() { cancellations++; }
+        boolean throwOnCallback;
+        @Override public void onSuccess(ChatResponse value) {
+            successes++;
+            response = value;
+            if (throwOnCallback) throw new IllegalStateException("listener details");
+        }
+        @Override public void onFailure(String code) {
+            failures++;
+            errorCode = code;
+            if (throwOnCallback) throw new IllegalStateException("listener details");
+        }
+        @Override public void onCancelled() {
+            cancellations++;
+            if (throwOnCallback) throw new IllegalStateException("listener details");
+        }
         int terminalCount() { return successes + failures + cancellations; }
+    }
+
+    private static final class Fixture {
+        final FakeGateway gateway = new FakeGateway();
+        final FakeScheduler scheduler = new FakeScheduler();
+        final FakeDispatcher dispatcher = new FakeDispatcher();
+        final BridgeCore core = new BridgeCore(gateway, scheduler, dispatcher, TIMEOUT_MS);
     }
 
     private static ChatRequest request() {
@@ -71,49 +128,51 @@ public class BridgeCoreTest {
         }
     }
 
-    @Test public void successProducesExactlyOneTerminalCallback() {
-        FakeGateway gateway = new FakeGateway();
-        BridgeCore core = new BridgeCore(gateway);
+    @Test public void successProducesExactlyOneTerminalCallbackAndCancelsTimeout() {
+        Fixture f = new Fixture();
         RecordingListener listener = new RecordingListener();
-        core.submit(request(), listener);
-        gateway.callback.onSuccess(new ChatResponse(ID, "Hello back"));
-        gateway.callback.onFailure();
+        f.core.submit(request(), listener);
+        f.gateway.callback.onSuccess(new ChatResponse(ID, "Hello back"));
+        f.gateway.callback.onFailure();
+        f.scheduler.fire();
         assertEquals(1, listener.terminalCount());
         assertEquals(1, listener.successes);
         assertEquals("Hello back", listener.response.getText());
-        assertEquals(0, core.activeRequestCount());
+        assertEquals(1, f.scheduler.cancelCalls);
+        assertEquals(0, f.gateway.cancelCalls);
+        assertEquals(0, f.core.activeRequestCount());
     }
 
     @Test public void mismatchedResponseIdFailsClosed() {
-        FakeGateway gateway = new FakeGateway();
-        BridgeCore core = new BridgeCore(gateway);
+        Fixture f = new Fixture();
         RecordingListener listener = new RecordingListener();
-        core.submit(request(), listener);
-        gateway.callback.onSuccess(new ChatResponse("request-id-00000002", "wrong response"));
+        f.core.submit(request(), listener);
+        f.gateway.callback.onSuccess(new ChatResponse("request-id-00000002", "wrong response"));
         assertEquals(1, listener.failures);
         assertEquals("GATEWAY_REQUEST_FAILED", listener.errorCode);
         assertEquals(0, listener.successes);
+        assertEquals(0, f.core.activeRequestCount());
     }
 
     @Test public void cancellationWinsAndLateGatewayCallbackIsIgnored() {
-        FakeGateway gateway = new FakeGateway();
-        BridgeCore core = new BridgeCore(gateway);
+        Fixture f = new Fixture();
         RecordingListener listener = new RecordingListener();
-        core.submit(request(), listener);
-        assertTrue(core.cancel(ID));
-        gateway.callback.onSuccess(new ChatResponse(ID, "late"));
-        assertFalse(core.cancel(ID));
-        assertEquals(1, gateway.cancelCalls);
+        f.core.submit(request(), listener);
+        assertTrue(f.core.cancel(ID));
+        f.gateway.callback.onSuccess(new ChatResponse(ID, "late"));
+        f.scheduler.fire();
+        assertFalse(f.core.cancel(ID));
+        assertEquals(1, f.gateway.cancelCalls);
+        assertEquals(1, f.scheduler.cancelCalls);
         assertEquals(1, listener.cancellations);
         assertEquals(1, listener.terminalCount());
     }
 
     @Test public void duplicateActiveRequestIdIsRejected() {
-        FakeGateway gateway = new FakeGateway();
-        BridgeCore core = new BridgeCore(gateway);
-        core.submit(request(), new RecordingListener());
+        Fixture f = new Fixture();
+        f.core.submit(request(), new RecordingListener());
         try {
-            core.submit(request(), new RecordingListener());
+            f.core.submit(request(), new RecordingListener());
             fail("duplicate active request ID must be rejected");
         } catch (IllegalStateException expected) {
             assertEquals("REQUEST_ALREADY_ACTIVE", expected.getMessage());
@@ -121,26 +180,119 @@ public class BridgeCoreTest {
     }
 
     @Test public void synchronousGatewayCallbackBeforeCallReturnIsSafe() {
-        FakeGateway gateway = new FakeGateway();
-        gateway.synchronous = true;
-        BridgeCore core = new BridgeCore(gateway);
+        Fixture f = new Fixture();
+        f.gateway.synchronous = true;
         RecordingListener listener = new RecordingListener();
-        core.submit(request(), listener);
+        f.core.submit(request(), listener);
         assertEquals(1, listener.successes);
-        assertEquals(0, gateway.cancelCalls);
-        assertEquals(0, core.activeRequestCount());
+        assertEquals(0, f.gateway.cancelCalls);
+        assertEquals(1, f.scheduler.cancelCalls);
+        assertEquals(0, f.core.activeRequestCount());
     }
 
     @Test public void gatewayExceptionReturnsGenericFailureWithoutLeakingDetails() {
-        FakeGateway gateway = new FakeGateway();
-        gateway.throwOnSend = true;
-        BridgeCore core = new BridgeCore(gateway);
+        Fixture f = new Fixture();
+        f.gateway.throwOnSend = true;
         RecordingListener listener = new RecordingListener();
-        core.submit(request(), listener);
+        f.core.submit(request(), listener);
         assertEquals(1, listener.failures);
         assertEquals("GATEWAY_REQUEST_FAILED", listener.errorCode);
         assertFalse(listener.errorCode.contains("private"));
-        assertEquals(0, core.activeRequestCount());
+        assertEquals(0, f.core.activeRequestCount());
+        assertEquals(1, f.scheduler.cancelCalls);
+    }
+
+    @Test public void timeoutProducesGenericTimeoutAndCancelsGatewayCall() {
+        Fixture f = new Fixture();
+        RecordingListener listener = new RecordingListener();
+        f.core.submit(request(), listener);
+        f.scheduler.fire();
+        assertEquals(1, listener.failures);
+        assertEquals("REQUEST_TIMEOUT", listener.errorCode);
+        assertEquals(1, f.gateway.cancelCalls);
+        assertEquals(1, listener.terminalCount());
+        assertEquals(0, f.core.activeRequestCount());
+    }
+
+    @Test public void successWinsAgainstLaterTimeout() {
+        Fixture f = new Fixture();
+        RecordingListener listener = new RecordingListener();
+        f.core.submit(request(), listener);
+        f.gateway.callback.onSuccess(new ChatResponse(ID, "done"));
+        f.scheduler.fire();
+        assertEquals(1, listener.successes);
+        assertEquals(0, listener.failures);
+        assertEquals(0, f.gateway.cancelCalls);
+        assertEquals(1, listener.terminalCount());
+    }
+
+    @Test public void cancellationWinsAgainstLaterTimeout() {
+        Fixture f = new Fixture();
+        RecordingListener listener = new RecordingListener();
+        f.core.submit(request(), listener);
+        assertTrue(f.core.cancel(ID));
+        f.scheduler.fire();
+        assertEquals(1, listener.cancellations);
+        assertEquals(0, listener.failures);
+        assertEquals(1, listener.terminalCount());
+    }
+
+    @Test public void timeoutBeforeGatewayReturnsCancelsLateCallHandle() {
+        Fixture f = new Fixture();
+        f.gateway.beforeReturn = new Runnable() {
+            @Override public void run() { f.scheduler.fire(); }
+        };
+        RecordingListener listener = new RecordingListener();
+        f.core.submit(request(), listener);
+        assertEquals(1, listener.failures);
+        assertEquals("REQUEST_TIMEOUT", listener.errorCode);
+        assertEquals(1, f.gateway.cancelCalls);
+        assertEquals(0, f.core.activeRequestCount());
+    }
+
+    @Test public void callbackDispatcherCanDeferDeliveryWithoutHoldingRequestActive() {
+        Fixture f = new Fixture();
+        f.dispatcher.immediate = false;
+        RecordingListener listener = new RecordingListener();
+        f.core.submit(request(), listener);
+        f.gateway.callback.onSuccess(new ChatResponse(ID, "queued"));
+        assertEquals(0, listener.terminalCount());
+        assertEquals(0, f.core.activeRequestCount());
+        f.dispatcher.drain();
+        assertEquals(1, listener.successes);
+    }
+
+    @Test public void listenerExceptionDoesNotEscapeOrCorruptLifecycle() {
+        Fixture f = new Fixture();
+        RecordingListener listener = new RecordingListener();
+        listener.throwOnCallback = true;
+        f.core.submit(request(), listener);
+        f.gateway.callback.onSuccess(new ChatResponse(ID, "safe"));
+        assertEquals(1, listener.successes);
+        assertEquals(0, f.core.activeRequestCount());
+        assertEquals(1, f.scheduler.cancelCalls);
+    }
+
+    @Test public void dispatcherExceptionDoesNotCorruptTerminalState() {
+        Fixture f = new Fixture();
+        f.dispatcher.throwOnDispatch = true;
+        RecordingListener listener = new RecordingListener();
+        f.core.submit(request(), listener);
+        f.gateway.callback.onSuccess(new ChatResponse(ID, "safe"));
+        assertEquals(0, listener.terminalCount());
+        assertEquals(0, f.core.activeRequestCount());
+        assertEquals(1, f.scheduler.cancelCalls);
+    }
+
+    @Test public void schedulerFailureFailsClosedBeforeGatewaySubmission() {
+        Fixture f = new Fixture();
+        f.scheduler.throwOnSchedule = true;
+        RecordingListener listener = new RecordingListener();
+        f.core.submit(request(), listener);
+        assertEquals(1, listener.failures);
+        assertEquals("GATEWAY_REQUEST_FAILED", listener.errorCode);
+        assertNull(f.gateway.callback);
+        assertEquals(0, f.core.activeRequestCount());
     }
 
     private static String repeat(String value, int count) {
