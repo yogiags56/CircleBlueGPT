@@ -159,3 +159,12 @@ Artifact #14707482360; ZIP SHA-256 `268d9e49be7bd9a4e9ad29112692d80096467d9c538c
 
 **Next stage (004V-6):** audit the original Cortana React Native runtime version and native-module registration conventions, then implement a matching text-only NativeModule in an isolated shell. Do not patch the original APK before compatibility is demonstrated.
 
+
+## Stage 004V-6 — React Native compatibility audit
+
+Static inspection found the original Cortana APK uses the legacy Catalyst bridge/JSC stack, including `ReactContextBaseJavaModule`, `ReactInstanceManager`, `ReactRootView`, `CatalystInstanceImpl`, `NativeModuleRegistry`, `JSCExecutor` and `RCTDeviceEventEmitter`. ARM64 and ARMv7 both contain `libreactnativejni.so`, `libjscexecutor.so` and `libjsc.so`; Hermes was not found.
+
+The exact React Native release is not exposed by the inspected APK metadata or version strings. A TurboModule diagnostic string is present but is not proof of TurboModule registration. Do not guess a React Native Maven version. Recover the original dependency lock/build files or pin the version using class/native fingerprints before compiling a NativeModule.
+
+Full audit and proposed allowlist are in `docs/legacy/REACT_NATIVE_BRIDGE_COMPATIBILITY.md`.
+
