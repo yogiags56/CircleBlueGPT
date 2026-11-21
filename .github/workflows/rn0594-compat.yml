@@ -77,6 +77,8 @@ jobs:
 
       - name: Launch on API 28 emulator and verify bridge
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          ANDROID_I_WANT_MY_TCG: "yes"
         with:
           api-level: 28
           target: default
