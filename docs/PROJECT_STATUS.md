@@ -1,7 +1,7 @@
 # Project status
 
 **Snapshot:** 2026-11-21  
-**Current stage:** 004V-3 — local/mock HTTPS transport; corrected CI validation in progress  
+**Current stage:** 004V-3B — real local/mock HTTPS server integration; transport client and protocol codec validated  
 **Overall status:** legacy reverse-engineering and platform-neutral prototypes exist; the Android security probe now builds and passes API 35 emulator instrumentation tests. Cortana UI/runtime integration remains unvalidated.
 
 ## Verified baseline
@@ -97,8 +97,15 @@
 - Cancellation/completion use one atomic state; cancellation disconnects active connection best-effort and suppresses late callbacks.
 - No auth header/session token, production URL, provider key, retry or backend chat endpoint is included. Executor must be background; network I/O must not run on main thread.
 - Android run #152 (`44901611627`) found 1 failing JVM test among 37: strict Gson reader reported extra top-level JSON as malformed rather than the expected trailing-data code. Corrected in commit `6e46c5a0d2b5c0ab3eac851d74720e9c7c70f30b`.
-- Corrected Android run #154 (`44901777496`): host-JVM test task and APK assembly passed; API 35 emulator instrumentation is still in progress. Do not mark Stage 004V-3 complete until the run finishes successfully.
-- Backend run #142 (`44901777488`) passed typecheck/build, migration idempotency and infrastructure integration tests.
+- Corrected Android run #154 (`44901777496`) completed successfully: all 37 host-JVM tests passed, APK assembly succeeded, and all 5 API 35 emulator instrumentation tests passed. Artifact #14706586070 was downloaded; ZIP and both APK archives passed integrity checks and hashes are recorded below.
+- Backend run #142 (`44901777488`) passed strict typecheck/build, migration idempotency and 41/41 PostgreSQL/Redis tests.
+
+### Latest Stage 004V-3 Android artifact — run #154
+
+- Artifact ID: `14706586070`; ZIP SHA-256: `50e1856ff4100aa666d0c1162afc9f3b11e0ee970b08e36e5e11f0f458fcaa2e`.
+- App APK: 133,948 bytes; SHA-256 `4c33365fc23294495fa87aa4504350d05887d48c5b2299bd95e5a295a273fc04`.
+- Instrumentation APK: 1,679,317 bytes; SHA-256 `217d27bbc81b425f9a7ad483316930c96900fff0d879967799d8411186354c31`.
+- ZIP and both APK archives passed integrity checks. Artifact retention expires 2026-12-05 per GitHub metadata.
 
 ## Security and release constraints
 
@@ -113,5 +120,6 @@
 2. Promote and validate the platform-neutral BridgeCore, AES-GCM codec and HTTP transport source/tests from the recovery workspace when the exact files are available.
 3. Obtain independent cryptographic review of the custom CortanaPoP proof-of-possession protocol before composing the tested challenge, P-256, replay and token primitives into public enrollment/session endpoints. The repository-level session-token tests have passed 41/41 in CI.
 4. Complete API 35 emulator validation for Stage 004V-2 timeout/dispatcher adapters.
-5. Build the Android–GPT transport bridge against a mock backend.
-6. Integrate the original Cortana UI/persona only after backend and bridge gates pass.
+5. Add a real local/mock HTTPS server integration suite for the HTTP gateway; current tests use an injected fake HttpsURLConnection and do not exercise a real TLS socket.
+6. Build the Android–GPT transport bridge against a mock backend.
+7. Integrate the original Cortana UI/persona only after backend and bridge gates pass.
