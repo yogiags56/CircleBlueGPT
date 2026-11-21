@@ -35,3 +35,5 @@
 - 004V-6: static audit confirms legacy React Native Bridge/JSC, but exact RN version remains unpinned. Supplied APK bundle call sites confirm NewmanViewManager `sendQuery(text, boolean)`, no-argument `onUserManualInput()` focus hook, `cancelListening()`, `resetConversation()`, and limited `forceResetConnection()`. Corrected the adapter to treat manual input as focus notification, not text submission. NativeModule implementation remains blocked on RN version/API fingerprinting; persona inventory has 48 PERS files pending full decode/state mapping.
 - 004W: controlled Cortana UI/persona integration assessment using `docs/legacy/CORTANA_SHELL_RESTORATION_MAP.md` as the static adapter plan.
 - 005: end-to-end MVP only after all preceding gates pass.
+
+- 004V-6A: metadata-only Java catalog added for all 48 original Cortana PERS files, including family/expression token, original GIF dimensions, frame counts and container sizes. Includes immutable lookups and path-traversal rejection plus six JVM tests. No payloads copied; runtime state/transition mapping remains open. Android CI pending.
