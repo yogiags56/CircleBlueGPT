@@ -276,3 +276,10 @@
 - Switched the Metro build host to Node 20 to satisfy current transitive package engine declarations; Gradle remains on JDK 8 after Android SDK setup under JDK 17.
 - Added a lockfile gate: generated `yarn.lock` must be committed after the first successful dependency resolution to freeze all transitive packages.
 - Next run must prove the Metro bundle passes. Android compilation and emulator validation remain pending.
+
+### Stage 004V-7 CI iteration 4 — explicit Babel core peer dependency (2026-11-22)
+
+- Workflow run #37 (`44934828118`) passed SDK/JDK setup and Yarn dependency installation with Node 20.
+- Metro then failed at bundle startup with `Cannot read properties of undefined (reading 'transformFile')`. Yarn output showed the Metro transformer and preset peer dependencies were missing `@babel/core`.
+- Added explicit build dependencies `@babel/core 7.16.5` and `metro-react-native-babel-preset 0.59.0`, keeping the React Native runtime dependency itself at 0.59.4.
+- Next run must validate bundle generation; Gradle compile and API 28 emulator bridge checks remain pending.
