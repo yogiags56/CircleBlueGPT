@@ -1,7 +1,7 @@
 # Project status
 
 **Snapshot:** 2026-11-21  
-**Current stage:** 004U — session-token primitives and Android probe validation  
+**Current stage:** 004V — platform-neutral bridge core and session-token primitives  
 **Overall status:** legacy reverse-engineering and platform-neutral prototypes exist; the Android security probe now builds and passes API 35 emulator instrumentation tests. Cortana UI/runtime integration remains unvalidated.
 
 ## Verified baseline
@@ -65,6 +65,16 @@
 - Backend CI run `44898789874` passed strict TypeScript typecheck/build, both migration passes and **41/41 tests** against PostgreSQL/Redis services. This run includes the CortanaPoP naming and test assertion update. The tests include challenge single-use/expiry/purpose isolation, P-256 signature and off-curve rejection, Redis replay concurrency, idempotency and session-token hash/authentication/expiry/rotation/revocation behavior.
 - These are repository-level primitives and health routes only. No public enrollment/authentication/rotation/revocation/chat endpoints, CortanaPoP verification middleware, provider adapter or production deployment exists. The latest backend workflow run `44898839254` is revalidating the latest documentation commit. The custom CortanaPoP proof-of-possession protocol has not received independent cryptographic review.
 - No exactly-once external provider execution is claimed; idempotency is not yet connected to a chat/provider orchestration route.
+
+## Stage 004V bridge core (in progress)
+
+- Added platform-neutral Java `ChatRequest`, `ChatResponse` and `BridgeCore` under `android/probe/app/src/main/java/com/cortanagpt/probe/bridge/`.
+- Request DTO enforces text-only input, a bounded selected-memory list (10 items; 2,048 characters per item; 8,192 total) and request/conversation ID validation.
+- Response DTO accepts only nonempty bounded text and a matching request ID; provider metadata and action/tool payloads are excluded.
+- BridgeCore arbitrates one terminal success/failure/cancellation callback, rejects duplicate active request IDs and ignores late gateway callbacks after cancellation. Gateway is injected; no HTTP/auth/provider endpoint is wired.
+- Eight JVM bridge tests were added for DTO validation, immutable memory, success/failure, mismatched IDs, cancellation races, duplicate IDs, synchronous callbacks and generic error handling.
+- Initial Android CI run `44899084557` found one faulty test fixture: the aggregate-memory test used a single item over the per-item cap. The fixture has been corrected to five 1,700-character items (8,500 total). The corrected CI run is pending; bridge tests are not yet counted as passing.
+- Listener callbacks are not marshalled to Android's main thread; the future Android UI adapter must dispatch them appropriately. No React Native NativeModule, streaming, event buffering, HTTP transport, timeout or production endpoint is implemented.
 
 ## Security and release constraints
 
