@@ -55,3 +55,37 @@ test("readiness fails closed when a dependency is unavailable", async () => {
     await app.close();
   }
 });
+
+
+test("malformed JSON is returned as a safe client error", async () => {
+  const app = buildApp(config, { database: async () => true, redis: async () => true });
+  try {
+    const response = await app.inject({
+      method: "POST",
+      url: "/health/live",
+      headers: { "content-type": "application/json" },
+      payload: "{not-json"
+    });
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.json().error.code, "INVALID_REQUEST");
+    assert.equal(response.json().error.message, "The request is malformed or invalid.");
+  } finally {
+    await app.close();
+  }
+});
+
+test("oversized JSON body is rejected with a stable error code", async () => {
+  const app = buildApp(config, { database: async () => true, redis: async () => true });
+  try {
+    const response = await app.inject({
+      method: "POST",
+      url: "/health/live",
+      headers: { "content-type": "application/json" },
+      payload: JSON.stringify({ data: "x".repeat(2048) })
+    });
+    assert.equal(response.statusCode, 413);
+    assert.equal(response.json().error.code, "REQUEST_TOO_LARGE");
+  } finally {
+    await app.close();
+  }
+});
