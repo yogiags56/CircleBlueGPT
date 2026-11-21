@@ -163,7 +163,7 @@
 - `close()` is idempotent, cancels active conversation work before executor shutdown and rejects later calls with `BRIDGE_CLOSED`.
 - Production constructor uses platform default TLS validation; injected custom connection factory is available for test-only certificate trust.
 - Added API 35 instrumentation tests for runtime HTTPS round-trip, displayText mapping, main-thread delivery, active cancellation on close, closed-state rejection and conversation reset.
-- Latest facade code and instrumentation tests are committed; Android and backend CI results are pending. Do not mark 004V-5 complete until all Android stages pass.
+- Android run #233 (`44904515691`) has passed 56 host-JVM tests and APK assembly; API 35 emulator instrumentation is still running. Backend run #206 (`44904515583`) completed successfully with typecheck/build, migration idempotency and 41/41 PostgreSQL/Redis tests. Do not mark 004V-5 complete until emulator instrumentation passes.
 
 ## Security and release constraints
 
