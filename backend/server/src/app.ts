@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import Fastify, { type FastifyInstance } from "fastify";
+import Fastify, { type FastifyError, type FastifyInstance } from "fastify";
 import type { AppConfig } from "./config.js";
 import { registerHealthRoutes, type DependencyHealth } from "./health.js";
 
@@ -17,7 +17,7 @@ export function buildApp(config: AppConfig, dependencies: AppDependencies): Fast
 
   registerHealthRoutes(app, dependencies);
 
-  app.setErrorHandler((error, _request, reply) => {
+  app.setErrorHandler((error: FastifyError, _request, reply) => {
     if (error.statusCode === 413) {
       return reply.code(413).send({
         error: { code: "REQUEST_TOO_LARGE", message: "Request body exceeds the configured limit." }
