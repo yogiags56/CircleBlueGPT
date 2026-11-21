@@ -58,7 +58,7 @@ export class SessionTokenRepository {
       await client.query("BEGIN");
       const session = await lockActiveSession(client, sessionId);
       const existing = await client.query(
-        "SELECT 1 FROM session_tokens WHERE session_id = $1 AND revoked_at IS NULL AND expires_at > NOW() LIMIT 1",
+        "SELECT 1 FROM session_tokens WHERE session_id = $1 LIMIT 1",
         [sessionId]
       );
       if (existing.rowCount) throw new Error("SESSION_TOKEN_ALREADY_ISSUED");
@@ -76,15 +76,28 @@ export class SessionTokenRepository {
   /** Rotates all outstanding access credentials and issues one replacement atomically. */
   async rotate(
     sessionId: string,
+    currentAccessToken: string,
     scopes: readonly string[] = ["chat:send", "session:revoke"],
     ttlSeconds = 900
   ): Promise<IssuedSessionToken> {
     validateSessionId(sessionId);
+    if (typeof currentAccessToken !== "string" || !TOKEN_PATTERN.test(currentAccessToken) ||
+        Buffer.from(currentAccessToken, "base64url").toString("base64url") !== currentAccessToken) {
+      throw new Error("INVALID_CURRENT_SESSION_TOKEN");
+    }
     const allowedScopes = validateTokenPolicy(scopes, ttlSeconds);
     const client = await this.pool.connect();
     try {
       await client.query("BEGIN");
       const session = await lockActiveSession(client, sessionId);
+      const current = await client.query(
+        `SELECT token_id FROM session_tokens
+          WHERE session_id = $1 AND token_hash = $2
+            AND revoked_at IS NULL AND expires_at > NOW()
+          FOR UPDATE`,
+        [sessionId, tokenDigest(currentAccessToken)]
+      );
+      if (current.rowCount !== 1) throw new Error("CURRENT_SESSION_TOKEN_NOT_ACTIVE");
       await client.query(
         "UPDATE session_tokens SET revoked_at = NOW() WHERE session_id = $1 AND revoked_at IS NULL",
         [sessionId]
