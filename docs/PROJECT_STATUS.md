@@ -1,7 +1,7 @@
 # Project status
 
 **Snapshot:** 2026-11-21  
-**Current stage:** 004T — anonymous session protocol and backend scaffold  
+**Current stage:** 004U — session-token primitives and Android probe validation  
 **Overall status:** legacy reverse-engineering and platform-neutral prototypes exist; the Android security probe now builds and passes API 35 emulator instrumentation tests. Cortana UI/runtime integration remains unvalidated.
 
 ## Verified baseline
@@ -26,7 +26,7 @@
 - Session destruction deletes the Android Keystore alias and clears encrypted token preferences.
 - A pure-Java compatibility policy is covered by host-JVM unit tests for API 19, 22, 23 and 35. These tests verify the policy boundary; they are not a substitute for running Android on API 19–22.
 - Android instrumentation tests exercise ciphertext round-trip, key-deletion invalidation and session destruction on API 35.
-- Latest Android probe workflow run `44894581676` completed successfully: host-JVM API policy tests, APK assembly, and all 3 API 35 emulator instrumentation tests passed.
+- Latest Android probe workflow run `44894581676` completed successfully: host-JVM API policy tests, APK assembly, and all 3 API 35 emulator instrumentation tests passed. A fresh branch-head Android workflow (`44897661202`) is running after the backend token repository additions.
 - Latest probe artifact ID `14703004994`; ZIP SHA-256 `aff277847cd34bffe6d7d246538b8b9adebfa8f81d50ead07a4bb0189ac9e330`. ZIP integrity verified; app APK 11,274 bytes and instrumentation APK 1,679,116 bytes.
 
 ## Stage 004S CI evidence
@@ -46,33 +46,25 @@
 - These host-JVM prototypes are not yet promoted into the repository and are not part of the Android app.
 - The probe is not the restored Cortana app and does not connect to a GPT provider.
 
-## Stage 004T protocol design
+## Stage 004T protocol design and review gate
 
 - `backend/ANONYMOUS_SESSION_PROTOCOL.md` defines a proposed P-256 installation-key enrollment flow, short-lived scoped access tokens, proof-of-possession request signatures, replay protection, durable idempotency, rotation and revocation.
 - Rotation is specified as a separate authenticated flow bound to the existing session key; it is not first-time enrollment.
 - This is a design document only. It has not undergone independent cryptographic review and no endpoint is live.
 
-## Backend scaffold (implementation started)
+## Backend scaffold and security primitives
 
-- A Node.js 22 / TypeScript / Fastify server skeleton exists under `backend/server/`.
+- Node.js 22 / TypeScript / Fastify server skeleton under `backend/server/`.
 - Configuration validation, liveness and dependency readiness routes are implemented with dependency injection for tests.
-- PostgreSQL/Redis connection wiring, a proposed initial schema and local Docker Compose services are present.
-- Unit tests cover configuration and health/readiness behavior.
-- Backend CI run #39 completed successfully: strict TypeScript typecheck and production build passed; the transactional PostgreSQL migration applied successfully and a second run correctly reported it already applied.
-- Backend CI run `44893660207` completed successfully: strict TypeScript typecheck and production build passed; migration #001 applied and safely re-applied.
-- **26/26 automated tests passed** against CI PostgreSQL/Redis services.
-- Integration coverage includes schema verification, Redis PING, idempotency first-write/replay, body-hash conflict, concurrent duplicate requests, stored-response replay and invalid state transitions.
-- Strict P-256 public-JWK validation/RFC 7638 thumbprints/ECDSA-SHA256 verification and atomic Redis proof-ID replay claims passed CI as part of the 26 tests.
-- A PostgreSQL enrollment-challenge repository is implemented: 32-byte random nonce, opaque challenge ID, bounded expiry, purpose-bound first-enrollment challenge and atomic single-use consumption.
-- Backend CI run `44894581613` passed typecheck/build, both migration passes and **34/34 tests**. Challenge tests cover concurrent consumption (exactly one winner), expiry and rotation-purpose rejection. Additional hardening tests verify off-curve P-256 points are rejected and 12 simultaneous Redis replay claims produce exactly one winner.
-- This validates the persistence primitive, not a complete chat endpoint or exactly-once external provider execution.
-- No enrollment, session issuance, chat completion, cryptographic proof validation or GPT provider adapter is implemented. The service is not production-ready.
-
-## Not yet verified
-- Real Android API 19–22 runtime behavior (the host-JVM tests validate only the compatibility policy).
-- Backend enrollment, anonymous session issuance and provider integration.
-- React Native bridge integration, original APK patching, signing or installation.
-- End-to-end conversation with a real GPT provider.
+- PostgreSQL/Redis wiring, local Docker Compose services and a transactional initial schema migration are present.
+- Durable idempotency repository supports first-write, same-body replay, body-hash conflict, state transitions and concurrent duplicate-request handling.
+- P-256 security helpers validate public-only JWKs (including curve-point validity), calculate RFC 7638 thumbprints and verify ECDSA-SHA256 signatures.
+- Redis proof replay store uses atomic `SET NX` with TTL and unambiguous length-prefixed session/proof identifiers.
+- PostgreSQL enrollment challenge repository creates 32-byte nonces and opaque IDs, bounds expiry, binds purpose and atomically consumes enrollment challenges once.
+- Session-token repository issues opaque 256-bit access tokens, stores only SHA-256 token hashes, checks active session/token state, enforces fixed scopes and bounded lifetime, prevents repeat initial issuance, requires the current unexpired token for rotation, and revokes session/token state transactionally.
+- Backend CI run `44897661183` passed strict TypeScript typecheck/build, both migration passes and **41/41 tests** against PostgreSQL/Redis services. The tests include challenge single-use/expiry/purpose isolation, P-256 signature and off-curve rejection, Redis replay concurrency, idempotency and session-token hash/authentication/expiry/rotation/revocation behavior.
+- These are repository-level primitives and health routes only. No public enrollment/authentication/rotation/revocation/chat endpoints, DPoP middleware, provider adapter or production deployment exists. The custom proof-of-possession protocol has not received independent cryptographic review.
+- No exactly-once external provider execution is claimed; idempotency is not yet connected to a chat/provider orchestration route.
 
 ## Security and release constraints
 
@@ -85,6 +77,6 @@
 
 1. Review the proposed Stage 004T protocol and threat model; obtain independent cryptographic review before implementation.
 2. Promote and validate the platform-neutral BridgeCore, AES-GCM codec and HTTP transport source/tests from the recovery workspace when the exact files are available.
-3. Run backend CI for the new session-token repository, then obtain independent cryptographic review of the session proof protocol before composing the tested challenge, P-256, replay and token primitives into enrollment/session endpoints.
+3. Obtain independent cryptographic review of the custom proof-of-possession protocol before composing the tested challenge, P-256, replay and token primitives into public enrollment/session endpoints. The repository-level session-token tests have passed 41/41 in CI.
 4. Build the Android–GPT transport bridge against a mock backend.
 5. Integrate the original Cortana UI/persona only after backend and bridge gates pass.
