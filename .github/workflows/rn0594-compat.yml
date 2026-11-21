@@ -35,6 +35,9 @@ jobs:
         with:
           node-version: "10.24.1"
 
+      - name: Install Yarn 1
+        run: npm install --global yarn@1.22.22
+
       - name: Set up Gradle 4.10.1
         uses: gradle/actions/setup-gradle@v4
         with:
@@ -52,9 +55,9 @@ jobs:
           distribution: temurin
           java-version: "8"
 
-      - name: Install pinned JavaScript dependencies
+      - name: Install legacy JavaScript dependencies with Babel resolutions
         working-directory: android/rn0594-compat
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: yarn install --ignore-scripts --non-interactive --no-progress
 
       - name: Generate compatibility JS bundle
         working-directory: android/rn0594-compat
