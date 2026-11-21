@@ -63,7 +63,8 @@
 - **26/26 automated tests passed** against CI PostgreSQL/Redis services.
 - Integration coverage includes schema verification, Redis PING, idempotency first-write/replay, body-hash conflict, concurrent duplicate requests, stored-response replay and invalid state transitions.
 - Strict P-256 public-JWK validation/RFC 7638 thumbprints/ECDSA-SHA256 verification and atomic Redis proof-ID replay claims passed CI as part of the 26 tests.
-- A PostgreSQL enrollment-challenge repository is now staged: 32-byte random nonce, short expiry, purpose-bound first-enrollment challenge, atomic single-use consumption. Six new tests cover issue/nonce shape, one-time consumption, concurrent consumption, expiry, rotation-purpose rejection and malformed IDs; CI is pending.
+- A PostgreSQL enrollment-challenge repository is implemented: 32-byte random nonce, opaque challenge ID, bounded expiry, purpose-bound first-enrollment challenge and atomic single-use consumption.
+- Backend CI run `44894470193` passed typecheck/build, both migration passes and **32/32 tests**. The six new challenge tests passed, including concurrent consumption (exactly one winner), expiry and rotation-purpose rejection.
 - This validates the persistence primitive, not a complete chat endpoint or exactly-once external provider execution.
 - No enrollment, session issuance, chat completion, cryptographic proof validation or GPT provider adapter is implemented. The service is not production-ready.
 
@@ -84,6 +85,6 @@
 
 1. Review the proposed Stage 004T protocol and threat model; obtain independent cryptographic review before implementation.
 2. Promote and validate the platform-neutral BridgeCore, AES-GCM codec and HTTP transport source/tests from the recovery workspace when the exact files are available.
-3. Run CI for the new enrollment-challenge persistence primitive; obtain independent review of the session proof protocol before implementing a live enrollment/session endpoint.
+3. Obtain independent cryptographic review of the session proof protocol; only then compose the tested challenge, P-256, replay and token primitives into enrollment/session endpoints.
 4. Build the Android–GPT transport bridge against a mock backend.
 5. Integrate the original Cortana UI/persona only after backend and bridge gates pass.
