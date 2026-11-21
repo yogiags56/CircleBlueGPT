@@ -41,7 +41,7 @@ public class LegacyConversationAdapterTest {
         void fail(String id) { callbacks.get(id).onFailure(); }
     }
 
-    private static final class RecordingListener implements LegacyConversationAdapter.Listener {
+    private static class RecordingListener implements LegacyConversationAdapter.Listener {
         int messages;
         int errors;
         int cancellations;
