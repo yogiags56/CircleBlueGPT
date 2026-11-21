@@ -15,7 +15,7 @@ export interface AuthenticatedSession {
 export interface IssuedSessionToken {
   tokenId: string;
   accessToken: string;
-  tokenType: "DPoP";
+  tokenType: "CortanaPoP";
   expiresAt: Date;
   scopes: SessionScope[];
 }
@@ -212,7 +212,7 @@ async function insertToken(
   return {
     tokenId,
     accessToken,
-    tokenType: "DPoP",
+    tokenType: "CortanaPoP",
     expiresAt: result.rows[0]!.expires_at,
     scopes
   };
