@@ -136,6 +136,17 @@
 - Instrumentation APK: 2,329,598 bytes; SHA-256 `99e17a3270cef8038814856cff1f4557bcebcc523d74381452c273a95c6db903`.
 - ZIP and both APK archives passed integrity checks. Artifact expires 2026-12-05 per GitHub metadata.
 
+## Stage 004V-4 legacy conversation adapter (CI in progress)
+
+- Added platform-neutral `LegacyConversationAdapter` for the statically mapped NewmanViewModule surface.
+- Maps `sendQuery` and `onUserManualInput` to validated ChatRequest submissions with only selected memory context.
+- Maps validated assistant text into the narrow legacy `view.displayText` response shape.
+- Maps cancel/reset/force-reset locally; request replacement and generation checks suppress stale responses.
+- Voice input, adaptive-card submission and legacy skill events return explicit unsupported errors in the text-only MVP.
+- Adapter serializes submit/cancel/reset transitions to avoid orphan requests during concurrent/reentrant callbacks; listener notifications occur outside its state locks.
+- Added 12 deterministic JVM tests for response mapping, memory selection, invalid input, cancellation/reset, replacement, reentrant callbacks, stale response suppression and unsupported legacy actions.
+- Android run #202 (`44903707612`) and backend run #180 (`44903707580`) are in progress. Do not mark 004V-4 complete until Android host-JVM, APK assembly and API 35 instrumentation all pass.
+
 ## Security and release constraints
 
 - Keep provider credentials exclusively on the backend; never embed provider API keys in the APK.
