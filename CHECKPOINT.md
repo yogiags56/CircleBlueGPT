@@ -165,3 +165,9 @@ The user re-uploaded the exact Cortana 3.3.3.2876 APK; SHA-256 matches `c8c3192b
 Evidence and compatibility plan: `docs/legacy/REACT_NATIVE_RUNTIME_FINGERPRINT.md`. The DEX contains legacy Bridge APIs, Promise, CatalystInstance and ReactInstanceManager. ARM64/ARMv7 include `libreactnativejni.so`, `libjscexecutor.so`, `libjsc.so`; no Hermes. Keep current probe on its modern toolchain. Next build an isolated RN 0.59.4 shell, check native PlatformConstants version parity, then verify no-op NativeModule registration, Promise resolve/reject, DeviceEventManagerModule event delivery and lifecycle teardown before integrating AndroidBridgeRuntime.
 
 New evidence commit: `06c5b26c102dadcc991e75346b4b3770a768d035`. Follow-up status/roadmap/checkpoint docs updated after it. Keep branch `stage-004r/bootstrap`, PR #1 draft, and `main` untouched.
+
+## Stage 004V-6A CI validation — Android run #275 (2026-11-21)
+
+Android run #275 (`44911443963`) passed on the persona catalog code commit `6e3422d744269a9b5a475feca93d7012838ab9fe`: host-JVM unit-test task passed, debug/instrumentation APKs assembled, and 12/12 API 35 emulator instrumentation tests completed. Backend run #240 (`44911443976`) passed. Artifact #14710076733; ZIP SHA-256 `03cfc5d97179712845c99a4e78602df3b27ec7c8b3fb6f941809f6d3d29db1ad`. This validates the persona metadata catalog code and family-count correction. It does not validate an RN 0.59.4 shell.
+
+The RN version is now recovered from the re-uploaded bundle as 0.59.4. See `docs/legacy/REACT_NATIVE_RUNTIME_FINGERPRINT.md`. Follow-up docs commits after the tested code commit: fingerprint `06c5b26c102dadcc991e75346b4b3770a768d035`, compatibility update `21bf9e37718a2b0d6fc567dcab6b7b210b698942`, status `01f13b57a18c4cbcdb86ba493ac72275e738e448`, roadmap `dee81b5eea4ba30b9aefc7f643650ada8ac903b4`, checkpoint `864930746e133029c72b610d7f7f697fed973842`.
