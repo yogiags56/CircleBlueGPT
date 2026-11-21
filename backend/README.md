@@ -7,7 +7,7 @@ Design references:
 - [Anonymous installation session protocol](ANONYMOUS_SESSION_PROTOCOL.md) — proposed enrollment, proof-of-possession, rotation and revocation contract.
 - [Threat model](THREAT_MODEL.md) — assets, trust boundaries, threats, mitigations and implementation gates.
 
-Both documents are proposals only; no backend endpoint is implemented or deployed.
+The wire protocol remains a proposal and has not undergone independent cryptographic review. The server scaffold now contains tested persistence/security primitives, but no public enrollment, authentication, rotation, revocation or chat endpoint is implemented or deployed.
 
 ## Responsibilities
 
@@ -66,4 +66,6 @@ npm test
 npm run dev
 ```
 
-The scaffold intentionally does not expose enrollment, chat, token issuance or provider routes yet. The SQL file is a reviewed-design starting point, not an automatically applied production migration. Do not expose this development compose configuration to the public internet.
+The scaffold intentionally does not expose enrollment, chat, token issuance or provider routes yet. Implemented repository primitives include one-time enrollment challenge persistence, P-256 JWK/signature verification, Redis proof replay claims, durable idempotency, and a session-token repository that stores SHA-256 token hashes and supports guarded rotation/revocation. The session-token repository's new CI suite is currently being validated. These are not route-level security controls and must not be exposed directly.
+
+The SQL file is an initial development migration, not a production migration approval. The custom proof-of-possession protocol requires independent review before any public endpoint is wired to these primitives. Do not expose this development compose configuration to the public internet.
