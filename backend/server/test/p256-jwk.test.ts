@@ -61,6 +61,14 @@ test("malformed coordinate encoding is rejected", () => {
   );
 });
 
+test("well-formed coordinate bytes that do not form a P-256 point are rejected", () => {
+  const coordinate = Buffer.alloc(32).toString("base64url");
+  assert.throws(
+    () => validateP256PublicJwk({ kty: "EC", crv: "P-256", x: coordinate, y: coordinate }),
+    /INVALID_PUBLIC_KEY/
+  );
+});
+
 test("valid P-256 SHA-256 DER signature verifies", () => {
   const { privateKey, publicJwk } = fixture();
   const message = "CORTANAGPT-ENROLL-V1\nchallenge\nnonce\nthumbprint";
