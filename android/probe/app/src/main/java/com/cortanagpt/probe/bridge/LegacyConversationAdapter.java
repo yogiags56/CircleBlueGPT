@@ -22,15 +22,14 @@ public final class LegacyConversationAdapter {
     /** Minimal legacy-compatible response shape consumed by the text display surface. */
     public static final class LegacyMessage {
         public final View view;
-        private LegacyMessage(String displayText) {
-            this.view = new View(displayText);
-        }
+        private LegacyMessage(String displayText) { this.view = new View(displayText); }
         public static final class View {
             public final String displayText;
             private View(String displayText) { this.displayText = displayText; }
         }
     }
 
+    private final Object submissionLock = new Object();
     private final Object lock = new Object();
     private final BridgeCore bridge;
     private final SelectedMemoryProvider memoryProvider;
@@ -49,9 +48,11 @@ public final class LegacyConversationAdapter {
         if (conversationId != null && (conversationId.length() == 0 || conversationId.length() > 128)) {
             throw new IllegalArgumentException("INVALID_CONVERSATION_ID");
         }
-        synchronized (lock) {
-            if (activeRequestId != null) throw new IllegalStateException("REQUEST_ACTIVE");
-            this.conversationId = conversationId;
+        synchronized (submissionLock) {
+            synchronized (lock) {
+                if (activeRequestId != null) throw new IllegalStateException("REQUEST_ACTIVE");
+                this.conversationId = conversationId;
+            }
         }
     }
 
@@ -83,52 +84,56 @@ public final class LegacyConversationAdapter {
         }
 
         final String requestId = UUID.randomUUID().toString();
-        final ChatRequest request;
-        final String requestConversationId;
-        try {
-            synchronized (lock) { requestConversationId = conversationId; }
-            request = new ChatRequest(requestId, requestConversationId, text, selectedMemory);
-        } catch (IllegalArgumentException error) {
-            notifyError(listener, "INVALID_USER_INPUT");
+        PendingSubmission pending = null;
+        String submissionError = null;
+
+        synchronized (submissionLock) {
+            try {
+                synchronized (lock) {
+                    ChatRequest request = new ChatRequest(requestId, conversationId, text, selectedMemory);
+                    String previousId = activeRequestId;
+                    Listener previousListener = activeListener;
+                    activeRequestId = requestId;
+                    activeListener = listener;
+                    long requestGeneration = ++generation;
+                    pending = new PendingSubmission(request, previousId, previousListener, requestGeneration);
+                }
+            } catch (IllegalArgumentException error) {
+                submissionError = "INVALID_USER_INPUT";
+            }
+
+            if (pending != null) {
+                if (pending.previousId != null) bridge.cancel(pending.previousId);
+                try {
+                    final long requestGeneration = pending.generation;
+                    bridge.submit(pending.request, new BridgeCore.Listener() {
+                        @Override public void onSuccess(ChatResponse response) {
+                            if (!claim(requestId, requestGeneration)) return;
+                            notifyMessage(listener, new LegacyMessage(response.getText()));
+                        }
+                        @Override public void onFailure(String errorCode) {
+                            if (!claim(requestId, requestGeneration)) return;
+                            notifyError(listener, errorCode);
+                        }
+                        @Override public void onCancelled() {
+                            if (!claim(requestId, requestGeneration)) return;
+                            notifyCancelled(listener);
+                        }
+                    });
+                } catch (RuntimeException error) {
+                    if (claim(requestId, requestGeneration)) submissionError = "CHAT_SUBMISSION_FAILED";
+                }
+            }
+        }
+
+        if (pending != null && pending.previousListener != null) {
+            notifyCancelled(pending.previousListener);
+        }
+        if (submissionError != null) {
+            notifyError(listener, submissionError);
             return null;
         }
-
-        final String previousId;
-        final Listener previousListener;
-        final long requestGeneration;
-        synchronized (lock) {
-            previousId = activeRequestId;
-            previousListener = activeListener;
-            activeRequestId = requestId;
-            activeListener = listener;
-            requestGeneration = ++generation;
-        }
-
-        if (previousId != null) {
-            bridge.cancel(previousId);
-            notifyCancelled(previousListener);
-        }
-
-        try {
-            bridge.submit(request, new BridgeCore.Listener() {
-                @Override public void onSuccess(ChatResponse response) {
-                    if (!claim(requestId, requestGeneration)) return;
-                    notifyMessage(listener, new LegacyMessage(response.getText()));
-                }
-                @Override public void onFailure(String errorCode) {
-                    if (!claim(requestId, requestGeneration)) return;
-                    notifyError(listener, errorCode);
-                }
-                @Override public void onCancelled() {
-                    if (!claim(requestId, requestGeneration)) return;
-                    notifyCancelled(listener);
-                }
-            });
-        } catch (RuntimeException error) {
-            if (claim(requestId, requestGeneration)) notifyError(listener, "CHAT_SUBMISSION_FAILED");
-            return null;
-        }
-        return requestId;
+        return pending == null ? null : requestId;
     }
 
     /** NewmanViewModule.onUserManualInput adapter; text input shares the same validated path. */
@@ -136,19 +141,21 @@ public final class LegacyConversationAdapter {
         return sendQuery(text, listener);
     }
 
-    /** NewmanViewModule.cancelListening adapter. The UI receives one cancellation even if a reply is queued. */
+    /** NewmanViewModule.cancelListening adapter. A queued reply is discarded after cancellation. */
     public boolean cancelListening() {
         final String requestId;
         final Listener listener;
-        synchronized (lock) {
-            if (activeRequestId == null) return false;
-            requestId = activeRequestId;
-            listener = activeListener;
-            activeRequestId = null;
-            activeListener = null;
-            generation++;
+        synchronized (submissionLock) {
+            synchronized (lock) {
+                if (activeRequestId == null) return false;
+                requestId = activeRequestId;
+                listener = activeListener;
+                activeRequestId = null;
+                activeListener = null;
+                generation++;
+            }
+            bridge.cancel(requestId);
         }
-        bridge.cancel(requestId);
         notifyCancelled(listener);
         return true;
     }
@@ -157,24 +164,22 @@ public final class LegacyConversationAdapter {
     public void resetConversation() {
         final String requestId;
         final Listener listener;
-        synchronized (lock) {
-            requestId = activeRequestId;
-            listener = activeListener;
-            activeRequestId = null;
-            activeListener = null;
-            conversationId = null;
-            generation++;
+        synchronized (submissionLock) {
+            synchronized (lock) {
+                requestId = activeRequestId;
+                listener = activeListener;
+                activeRequestId = null;
+                activeListener = null;
+                conversationId = null;
+                generation++;
+            }
+            if (requestId != null) bridge.cancel(requestId);
         }
-        if (requestId != null) {
-            bridge.cancel(requestId);
-            notifyCancelled(listener);
-        }
+        if (requestId != null) notifyCancelled(listener);
     }
 
     /** Legacy force-reset alias; it never reuses Microsoft connection or authentication state. */
-    public void forceResetConnection() {
-        resetConversation();
-    }
+    public void forceResetConnection() { resetConversation(); }
 
     /** Voice is intentionally outside the text-only MVP. */
     public boolean startListening(Listener listener) {
@@ -217,5 +222,18 @@ public final class LegacyConversationAdapter {
     private static void notifyCancelled(Listener listener) {
         if (listener == null) return;
         try { listener.onCancelled(); } catch (RuntimeException ignored) { }
+    }
+
+    private static final class PendingSubmission {
+        final ChatRequest request;
+        final String previousId;
+        final Listener previousListener;
+        final long generation;
+        PendingSubmission(ChatRequest request, String previousId, Listener previousListener, long generation) {
+            this.request = request;
+            this.previousId = previousId;
+            this.previousListener = previousListener;
+            this.generation = generation;
+        }
     }
 }
