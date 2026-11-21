@@ -1,7 +1,7 @@
 # Project status
 
 **Snapshot:** 2026-11-21  
-**Current stage:** 004V — platform-neutral bridge core; lifecycle hardening is next  
+**Current stage:** 004V-2 — timeout scheduler and callback dispatcher; emulator validation pending  
 **Overall status:** legacy reverse-engineering and platform-neutral prototypes exist; the Android security probe now builds and passes API 35 emulator instrumentation tests. Cortana UI/runtime integration remains unvalidated.
 
 ## Verified baseline
@@ -62,7 +62,7 @@
 - Redis proof replay store uses atomic `SET NX` with TTL and unambiguous length-prefixed session/proof identifiers.
 - PostgreSQL enrollment challenge repository creates 32-byte nonces and opaque IDs, bounds expiry, binds purpose and atomically consumes enrollment challenges once.
 - Session-token repository issues opaque 256-bit access tokens, stores only SHA-256 token hashes, checks active session/token state, enforces fixed scopes and bounded lifetime, prevents repeat initial issuance, requires the current unexpired token for rotation, and revokes session/token state transactionally.
-- Backend CI run `44898789874` passed strict TypeScript typecheck/build, both migration passes and **41/41 tests** against PostgreSQL/Redis services. This run includes the CortanaPoP naming and test assertion update. The tests include challenge single-use/expiry/purpose isolation, P-256 signature and off-curve rejection, Redis replay concurrency, idempotency and session-token hash/authentication/expiry/rotation/revocation behavior.
+- Backend CI run #119 (`44900668259`) passed strict TypeScript typecheck/build, both migration passes and **41/41 tests** against PostgreSQL/Redis services. Earlier successful backend run #99 is historical baseline. This run includes the CortanaPoP naming and test assertion update. The tests include challenge single-use/expiry/purpose isolation, P-256 signature and off-curve rejection, Redis replay concurrency, idempotency and session-token hash/authentication/expiry/rotation/revocation behavior.
 - These are repository-level primitives and health routes only. No public enrollment/authentication/rotation/revocation/chat endpoints, CortanaPoP verification middleware, provider adapter or production deployment exists. Backend CI run #99 (`44899189694`) passed strict TypeScript typecheck/build, migration idempotency and 41/41 tests against PostgreSQL/Redis services. The custom CortanaPoP proof-of-possession protocol has not received independent cryptographic review.
 - No exactly-once external provider execution is claimed; idempotency is not yet connected to a chat/provider orchestration route.
 
@@ -77,6 +77,17 @@
 - Corrected Android run #94 (`44899189690`) completed successfully: 4 Keystore policy tests + 8 bridge JVM tests passed, APK assembly succeeded, and all 3 API 35 emulator instrumentation tests passed.
 - Listener callbacks are not marshalled to Android's main thread; the future Android UI adapter must dispatch them appropriately. No React Native NativeModule, streaming, event buffering, HTTP transport, timeout or production endpoint is implemented.
 
+## Stage 004V-2 lifecycle hardening (CI in progress)
+
+- `BridgeCore` now receives an injected `TimeoutScheduler`, `CallbackDispatcher` and positive timeout duration. Timeout, success, generic failure and cancellation compete through one terminal-state gate.
+- Timeout handles are cancelled after any terminal result. If timeout/cancellation wins before `Gateway.send` returns its call handle, the late handle is cancelled immediately.
+- Listener callbacks are dispatched outside the internal lock. Listener and dispatcher runtime exceptions are contained.
+- Added Android adapters: `AndroidMainThreadDispatcher` and `MainLooperTimeoutScheduler`. The timeout adapter uses the main looper; a blocked UI thread can delay timeout delivery, and network I/O must never run on that looper.
+- Expanded JVM bridge tests for timeout/success/cancel races, cancel-before-handle-return, timeout-before-handle-return, deferred dispatch, listener/dispatcher exceptions and scheduler failure.
+- Added API 35 instrumentation tests for Android main-looper dispatch and timeout delivery.
+- Latest Android run #120 (`44900668260`) has passed host-JVM tests and APK assembly; API 35 emulator instrumentation is still in progress. Do not mark Stage 004V-2 complete until the emulator step succeeds.
+- Latest backend run #119 (`44900668259`) completed typecheck/build, migration idempotency and 41/41 PostgreSQL/Redis tests successfully.
+
 ## Security and release constraints
 
 - Keep provider credentials exclusively on the backend; never embed provider API keys in the APK.
@@ -89,6 +100,6 @@
 1. Review the proposed Stage 004T protocol and threat model; obtain independent cryptographic review before implementation.
 2. Promote and validate the platform-neutral BridgeCore, AES-GCM codec and HTTP transport source/tests from the recovery workspace when the exact files are available.
 3. Obtain independent cryptographic review of the custom CortanaPoP proof-of-possession protocol before composing the tested challenge, P-256, replay and token primitives into public enrollment/session endpoints. The repository-level session-token tests have passed 41/41 in CI.
-4. Harden BridgeCore with an injectable timeout scheduler and callback dispatcher, then add deterministic race tests.
+4. Complete API 35 emulator validation for Stage 004V-2 timeout/dispatcher adapters.
 5. Build the Android–GPT transport bridge against a mock backend.
 6. Integrate the original Cortana UI/persona only after backend and bridge gates pass.
