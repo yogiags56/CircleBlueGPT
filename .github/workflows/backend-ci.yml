@@ -73,6 +73,10 @@ jobs:
         working-directory: backend/server
         run: npm run migrate
 
+      - name: Verify migrations are idempotent
+        working-directory: backend/server
+        run: npm run migrate
+
       - name: Run unit and infrastructure integration tests
         working-directory: backend/server
         run: npm test
