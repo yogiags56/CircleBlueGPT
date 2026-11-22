@@ -42,6 +42,10 @@ test("rejects non-HTTPS provider endpoints and embedded URL credentials", () => 
     () => new OpenAICompatibleChatProvider({ ...config, endpoint: "https://user:pass@provider.example/chat" }),
     error => error instanceof ChatProviderError && error.code === "PROVIDER_NOT_CONFIGURED"
   );
+  assert.throws(
+    () => new OpenAICompatibleChatProvider({ ...config, apiKey: "valid-but-bad\nheader-key" }),
+    error => error instanceof ChatProviderError && error.code === "PROVIDER_NOT_CONFIGURED"
+  );
 });
 
 test("rejects invalid input before making a provider call", async () => {
@@ -84,5 +88,35 @@ test("enforces provider response byte limits before parsing JSON", async () => {
   await assert.rejects(
     provider.complete(input),
     error => error instanceof ChatProviderError && error.code === "PROVIDER_RESPONSE_TOO_LARGE"
+  );
+});
+
+
+test("enforces the configured assistant output character limit", async () => {
+  const provider = new OpenAICompatibleChatProvider({
+    ...config, maxOutputCharacters: 5
+  }, async () => new Response(JSON.stringify({
+    choices: [{ message: { content: "six!!!" } }]
+  }), { status: 200 }));
+  await assert.rejects(
+    provider.complete(input),
+    error => error instanceof ChatProviderError && error.code === "PROVIDER_INVALID_RESPONSE"
+  );
+});
+
+test("aborts a provider request after the configured timeout", async () => {
+  const provider = new OpenAICompatibleChatProvider({
+    ...config, timeoutMs: 1000
+  }, async (_url, init) => new Promise<Response>((_resolve, reject) => {
+    const signal = init?.signal as AbortSignal;
+    signal.addEventListener("abort", () => {
+      const error = new Error("aborted");
+      error.name = "AbortError";
+      reject(error);
+    }, { once: true });
+  }));
+  await assert.rejects(
+    provider.complete(input),
+    error => error instanceof ChatProviderError && error.code === "PROVIDER_TIMEOUT"
   );
 });
