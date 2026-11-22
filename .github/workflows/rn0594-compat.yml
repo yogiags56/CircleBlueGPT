@@ -57,7 +57,7 @@ jobs:
 
       - name: Install legacy JavaScript dependencies with Babel resolutions
         working-directory: android/rn0594-compat
-        run: yarn install --ignore-scripts --non-interactive --no-progress --ignore-engines
+        run: yarn install --frozen-lockfile --ignore-scripts --non-interactive --no-progress --ignore-engines
 
       - name: Commit generated Yarn lockfile
         working-directory: .
