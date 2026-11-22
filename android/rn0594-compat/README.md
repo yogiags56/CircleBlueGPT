@@ -83,3 +83,19 @@ backend endpoint contract, response schema interoperability, selected-memory
 policy, cancellation under real network load, and end-to-end device testing
 remain to be validated. The legacy `sendQuery(text, boolean)` boolean meaning
 remains unresolved and is intentionally not exposed.
+
+
+### CI lifecycle checks
+
+The RN emulator smoke test also exercises the fail-closed and idle lifecycle paths
+without a configured endpoint:
+
+- `getBridgeStatus()` must report `endpoint-not-configured`.
+- `sendText()` must reject with `E_BRIDGE_UNAVAILABLE` instead of attempting a request.
+- `cancelListening()` with no active runtime must resolve `false`.
+- `resetConversation()` with no active runtime must resolve successfully.
+- The legacy no-argument `onUserManualInput()` call must not submit a message or crash.
+
+These checks prove registration and safe unconfigured behavior only. They do not
+validate a live HTTPS response, authentication, provider execution or cancellation
+against an active network request.
