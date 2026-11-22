@@ -356,3 +356,14 @@
 - The verifier is deliberately not wired to any HTTP route. It does not itself authenticate tokens, enforce scopes, claim replay IDs, or capture trusted raw request bytes. Public integration remains blocked on independent protocol review, canonicalization interoperability vectors, and full route-level authorization/replay/idempotency tests.
 - The protocol remains custom proposal-only CortanaPoP, not RFC 9449 DPoP. No public API, provider integration or live chat endpoint has been deployed.
 - Latest Android probe and RN compatibility CI on this code commit are still running; see Actions for current status.
+
+
+## 004V-10 — bounded GPT provider adapter (2026-11-22)
+
+- Added an injectable OpenAI-compatible provider adapter in `backend/server/src/provider/openai-compatible.ts`. It is backend-only and not wired to an HTTP route.
+- Configuration requires a valid HTTPS endpoint, a server-side API key and bounded model identifier. API keys containing CR/LF are rejected; endpoint URL credentials, query and fragment are rejected.
+- Request messages, count and output-token allowance are bounded. Redirects are disabled, requests have a timeout, response bytes are capped before JSON parsing, assistant response shape/length is validated, and upstream diagnostics are normalized rather than exposed.
+- Tests use an injected fake fetch; no external provider request or real credential is used.
+- Backend CI run #45055528618 passed TypeScript typecheck, build, migrations/idempotency checks and **55/55 tests**. The suite includes six CortanaPoP verifier tests and eight provider adapter tests, including timeout and output-limit behavior.
+- RN compatibility run #45055533850 and Android probe run #45055533805 on the same commit are still in progress. Do not claim those newest cross-platform runs have passed until completed.
+- The provider adapter is not called by any route. There is still no live chat endpoint, provider deployment, production key, or end-to-end GPT conversation. Public route work remains gated on independent review of the custom CortanaPoP protocol, route-level authentication/authorization, replay/idempotency ordering, quotas, cancellation, and privacy policy.
