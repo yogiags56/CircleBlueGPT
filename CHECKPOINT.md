@@ -227,3 +227,16 @@ Verified current branch `stage-004r/bootstrap`, commit `9cec35c89a49fa62872b9225
 5. Keep voice, cards and legacy skills outside the first text-only MVP. Do not patch the immutable original APK, commit proprietary persona payloads/secrets, or merge PR #1/main without explicit approval.
 
 Repository status, roadmap and this checkpoint were synchronized after observing the successful Actions runs. These documentation changes do not alter application code or CI evidence.
+
+
+## Continuation — 004V-8 initial RN bridge adapter (2026-11-22)
+
+- Confirmed frozen dependency install run #45000494436 completed successfully: lockfile present, Metro bundle, APK assembly, API 28 emulator bridge smoke test and APK artifact upload all passed.
+- Committed initial CortanaBridgeModule / CortanaBridgePackage and registered the package in MainApplication.
+- Copied the validated Android bridge runtime components under com.cortanagpt.probe.bridge in the RN shell; added Gson 2.11.0.
+- Native API surface: getBridgeStatus(), sendText(text), setConversationId(id), cancelListening(), resetConversation(), and no-argument onUserManualInput(). Assistant text/error/cancel notifications use native events.
+- The endpoint resource is empty by default and fails closed; no credentials or production URL are committed. Manifest permits Internet but disables cleartext traffic.
+- JS smoke test checks NativeModule registration and expected endpoint-not-configured status without sending network traffic.
+- Integration CI run #45001227289 is queued; module compilation and API 28 smoke test remain unverified.
+- Do not claim a live GPT connection yet. Remaining: CI compile/runtime verification, explicit endpoint configuration in a safe deployment overlay, contract verification against backend, integration tests for text reply/cancel/reset/teardown, and a real device test.
+- The legacy sendQuery(text, boolean) flag remains intentionally unresolved; sendText(text) is the explicit new text-only API. Voice, skills and adaptive cards remain excluded.
