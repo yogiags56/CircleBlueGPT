@@ -53,3 +53,33 @@ native runtime. CI must additionally launch the app on an API 28 emulator and
 observe both `RN0594_PLATFORM_VERSION` and
 `RN0594_NATIVE_PROMISE_OK:native-module-ready` in ReactNativeJS log output.
 Compare the reported native version with the bundle's 0.59.4 declaration.
+
+
+## Cortana text bridge integration (initial adapter)
+
+The compatibility shell now includes `CortanaBridgeModule`, which wraps the
+validated platform-neutral bridge classes copied from `android/probe`:
+
+- `sendText(text)` returns a request ID Promise; assistant output, errors and
+  cancellation are delivered through `CortanaAssistantMessage`,
+  `CortanaBridgeError` and `CortanaBridgeCancelled` events.
+- `setConversationId(id)`, `cancelListening()`,
+  `resetConversation()` and the no-argument `onUserManualInput()` hook
+  preserve the text conversation lifecycle.
+- Network requests run on a dedicated worker; bridge callbacks are dispatched
+  to Android's main looper. Runtime teardown cancels active work.
+- Only HTTPS is accepted. Cleartext traffic is disabled and the INTERNET
+  permission is declared.
+
+The default `cortanagpt_chat_endpoint` Android string resource is deliberately
+empty. Supply the deployment endpoint through a local/flavor resource overlay;
+do not commit provider credentials, access tokens or production endpoints.
+Until configured, `getBridgeStatus()` returns
+`endpoint-not-configured` and query submission fails closed. The smoke test
+checks that this NativeModule is registered without making a network request.
+
+This is an initial integration boundary, not yet a production chat release:
+backend endpoint contract, response schema interoperability, selected-memory
+policy, cancellation under real network load, and end-to-end device testing
+remain to be validated. The legacy `sendQuery(text, boolean)` boolean meaning
+remains unresolved and is intentionally not exposed.
