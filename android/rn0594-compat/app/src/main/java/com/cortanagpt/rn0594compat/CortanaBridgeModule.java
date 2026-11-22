@@ -2,6 +2,8 @@ package com.cortanagpt.rn0594compat;
 
 import com.cortanagpt.probe.bridge.AndroidBridgeRuntime;
 import com.cortanagpt.probe.bridge.LegacyConversationAdapter;
+import android.net.Uri;
+
 import com.facebook.react.bridge.Arguments;
 import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
@@ -32,7 +34,7 @@ public final class CortanaBridgeModule extends ReactContextBaseJavaModule {
     @Override public String getName() { return "CortanaBridge"; }
 
     @ReactMethod public void getBridgeStatus(Promise promise) {
-        promise.resolve(isEndpointConfigured() ? "ready" : "endpoint-not-configured");
+        promise.resolve(isEndpointConfigured() ? "endpoint-configured" : "endpoint-not-configured");
     }
 
     @ReactMethod public void setConversationId(String conversationId, Promise promise) {
@@ -112,13 +114,26 @@ public final class CortanaBridgeModule extends ReactContextBaseJavaModule {
     }
 
     private boolean isEndpointConfigured() {
-        synchronized (lock) { return endpointUrl.length() > 0; }
+        synchronized (lock) {
+            if (endpointUrl.length() == 0) return false;
+            try {
+                Uri uri = Uri.parse(endpointUrl);
+                return "https".equalsIgnoreCase(uri.getScheme())
+                        && uri.getHost() != null
+                        && uri.getHost().length() > 0
+                        && uri.getUserInfo() == null
+                        && uri.getQuery() == null
+                        && uri.getFragment() == null;
+            } catch (RuntimeException error) {
+                return false;
+            }
+        }
     }
 
     private AndroidBridgeRuntime requireRuntime() {
         synchronized (lock) {
-            if (endpointUrl.length() == 0) {
-                throw new IllegalStateException("CHAT_ENDPOINT_NOT_CONFIGURED");
+            if (!isEndpointConfigured()) {
+                throw new IllegalStateException("CHAT_ENDPOINT_NOT_CONFIGURED_OR_INVALID");
             }
             if (runtime == null || runtime.isClosed()) {
                 runtime = new AndroidBridgeRuntime(endpointUrl, null);
