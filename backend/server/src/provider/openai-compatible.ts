@@ -52,7 +52,7 @@ export class OpenAICompatibleChatProvider {
     config: OpenAICompatibleProviderConfig,
     private readonly fetchImpl: typeof fetch = fetch
   ) {
-    if (!config.apiKey || config.apiKey.trim().length < 16 || /[\\r\\n]/.test(config.apiKey) ||
+    if (!config.apiKey || config.apiKey.trim().length < 16 || /[\r\n]/.test(config.apiKey) ||
         !config.model || config.model.trim().length === 0 || config.model.length > 128) {
       throw new ChatProviderError("PROVIDER_NOT_CONFIGURED");
     }
