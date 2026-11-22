@@ -335,3 +335,13 @@
 - JS smoke test now checks that CortanaBridge is registered and reports endpoint-not-configured; it makes no network call.
 - New integration CI is queued at run #45001227289. The new module has not yet passed compilation/emulator validation.
 - This is a native adapter integration, not a live GPT conversation. Endpoint configuration, backend contract interoperability, real device/network test, memory selection, and legacy sendQuery(text, boolean) semantics remain open.
+
+
+## Runtime evidence and additional fail-closed checks (2026-11-22)
+
+- RN compatibility run #45001282960 completed successfully. Its emulator log contains all required markers, including `CORTANA_BRIDGE_MODULE_OK:endpoint-not-configured`, proving the new Cortana NativeModule is registered and callable in RN 0.59.4.
+- The same run also observed native PlatformConstants 0.59.4, Promise resolve/reject behavior and event delivery.
+- Android probe run #45001282289 passed API 35 instrumentation; backend CI run #45001282287 passed typecheck, migration/idempotency verification, infrastructure integration tests and build.
+- A second hardening pass added explicit Android URI validation for HTTPS endpoint configuration and expanded RN emulator assertions: `sendText()` must fail closed when no endpoint is configured; idle cancellation must return false; idle reset must resolve; the legacy no-argument focus notification must remain safe.
+- New CI runs #45012904259 (latest RN smoke with the expanded assertions), #45012901196 (Android probe), and #45012901151 (backend) are still in progress at this checkpoint. Do not claim these additional assertions passed until their run logs show the markers.
+- The endpoint remains intentionally unset. There is no live chat endpoint, provider integration, session authentication, or end-to-end GPT response yet.
