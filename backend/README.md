@@ -7,7 +7,7 @@ Design references:
 - [Anonymous installation session protocol](ANONYMOUS_SESSION_PROTOCOL.md) — proposed enrollment, proof-of-possession, rotation and revocation contract.
 - [Threat model](THREAT_MODEL.md) — assets, trust boundaries, threats, mitigations and implementation gates.
 
-The custom CortanaPoP wire protocol remains a proposal, is not RFC 9449 DPoP, and has not undergone independent cryptographic review. The server scaffold now contains tested persistence/security primitives, but no public enrollment, authentication, rotation, revocation or chat endpoint is implemented or deployed.
+The custom CortanaPoP wire protocol remains a proposal, is not RFC 9449 DPoP, and has not undergone independent cryptographic review. The server scaffold now contains tested persistence/security primitives, but no public enrollment, authentication, rotation, revocation or chat endpoint is implemented or deployed. A route-independent verifier primitive and negative/positive test vectors now exist under `server/src/security/cortana-pop.ts`; this does not constitute protocol approval or public-route readiness.
 
 ## Responsibilities
 
@@ -69,3 +69,10 @@ npm run dev
 The scaffold intentionally does not expose enrollment, chat, token issuance or provider routes yet. Implemented repository primitives include one-time enrollment challenge persistence, P-256 JWK/signature verification, Redis proof replay claims, durable idempotency, and a session-token repository that stores SHA-256 token hashes and supports guarded rotation/revocation. The session-token repository and its seven lifecycle tests passed in backend CI run `44897661183` (41/41 total tests). A follow-up CI run is validating the current naming/protocol documentation hardening. These are not route-level security controls and must not be exposed directly.
 
 The SQL file is an initial development migration, not a production migration approval. The custom CortanaPoP proof-of-possession protocol requires independent review before any public endpoint is wired to these primitives. Do not expose this development compose configuration to the public internet.
+
+
+## CortanaPoP verifier primitive (not a route)
+
+`server/src/security/cortana-pop.ts` implements the proposal's detached-signature canonicalization and P-256 verification over the exact raw body bytes, uppercase method, origin-form path+query, timestamp, proof ID and access-token hash. It rejects malformed targets, invalid timestamp windows, malformed IDs/tokens and invalid signatures. Unit tests use ephemeral test-only keys.
+
+This helper intentionally does not consume replay IDs, authenticate session tokens, authorize scopes, or establish a trusted request-body capture boundary. A future route must, in order: obtain the token and active session from the token repository; capture exact raw bytes and trusted origin-form target; call the verifier; atomically claim the proof ID in Redis; enforce scope and quotas; then enter the idempotency/provider pipeline. The exact order and canonicalization still require independent review and cross-language test vectors. Do not wire this helper to a public route yet.
