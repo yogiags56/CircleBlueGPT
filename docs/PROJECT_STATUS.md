@@ -1,8 +1,8 @@
 # Project status
 
 **Snapshot:** 2026-11-22  
-**Current stage:** 004V-7 — isolated React Native 0.59.4 compatibility shell scaffold; CI validation pending  
-**Overall status:** legacy reverse-engineering and platform-neutral prototypes exist; the Android security probe now builds and passes API 35 emulator instrumentation tests. Cortana UI/runtime integration remains unvalidated.
+**Current stage:** 004V-7 — isolated React Native 0.59.4 compatibility shell; API 28 runtime validation passed  
+**Overall status:** legacy reverse-engineering, bridge prototypes and the isolated RN 0.59.4 runtime compatibility shell are validated by CI. Full Cortana UI/persona restoration and GPT-backed end-to-end conversation remain unimplemented.
 
 ## Verified baseline
 
@@ -303,3 +303,24 @@
 - Added the RN-era `SoLoader.init(this, false)` call in `MainApplication.onCreate()` before the React Native host is first used. This is part of the standard legacy Android bootstrap and is required before native RN libraries are loaded.
 - Workflow run #54 (`44935272285`) has already passed JS bundle generation and APK assembly; its API 28 emulator gate is still running at last check. That run predates the SoLoader change. Workflow run #57 (`44935575432`) includes the SoLoader correction and is in progress.
 - Runtime verification remains gated on API 28 logs for native version parity, Promise resolve/reject and event delivery.
+
+## Stage 004V-7 — RN 0.59.4 runtime compatibility validated (2026-11-22)
+
+- Isolated compatibility shell: `android/rn0594-compat/`; it does not downgrade or replace the modern Android probe toolchain.
+- GitHub Actions run #16 (`44998947302`) completed successfully on branch `stage-004r/bootstrap`, commit `9cec35c89a49fa62872b9225870a2668a010c149`.
+- Workflow completed the legacy dependency install, Metro bundle generation, APK assembly, API 28 emulator launch, bridge smoke test and APK artifact upload.
+- The smoke-test gate requires all four runtime markers: native React Native version parity (0.59.4), NativeModule Promise resolve, Promise rejection, and DeviceEventManagerModule event delivery. A successful job means all required markers were observed.
+- The separate modern Android probe run #18 (`44998951982`) also completed successfully: host-JVM compatibility policy tests, APK assembly, API 35 emulator instrumentation and artifact upload passed.
+- Backend CI run #19 (`44998952019`) completed successfully; 41/41 backend tests passed.
+- Follow-up run #17 (`44998951927`) also reached successful API 28 smoke test and artifact upload; its Actions job was still completing post-job cleanup at the time of inspection. Run #16 is the completed canonical evidence.
+- Run links: https://github.com/yogiags56/CircleBlueGPT/actions/runs/44998947302 ; https://github.com/yogiags56/CircleBlueGPT/actions/runs/44998951982 ; https://github.com/yogiags56/CircleBlueGPT/actions/runs/44998952019
+- **Scope limitation:** this validates a minimal isolated RN 0.59.4 Android shell and a test NativeModule. It does not yet validate the original Cortana React Native bundle, Newman bridge implementation, persona renderer, Microsoft service replacement, or a GPT-backed conversation.
+- **Remaining reproducibility item:** no committed `yarn.lock` was present in the shell at validation time. Generate and commit a lockfile from the verified dependency resolution before treating builds as fully reproducible.
+
+### Next implementation slice — 004V-8
+
+1. Capture the exact resolved Yarn dependency graph as a committed `yarn.lock`; change CI to install with `--frozen-lockfile`.
+2. Add an adapter contract test around the verified RN 0.59.4 bridge, then integrate the existing `AndroidBridgeRuntime` into the RN shell through a narrowly scoped NativeModule.
+3. Keep the original `sendQuery(text, boolean)` boolean semantics unresolved until the original bundle behavior is proven; do not infer it.
+4. Preserve the existing `onUserManualInput()` no-argument focus hook and the text-only MVP boundary.
+5. Begin Cortana UI/persona restoration only after the bridge adapter lifecycle and event behavior are validated. Keep proprietary PERS payloads and the original APK out of Git.
