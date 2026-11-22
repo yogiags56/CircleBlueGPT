@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { generateKeyPairSync, randomBytes, sign } from "node:crypto";
+import { createHash, generateKeyPairSync, randomBytes, sign } from "node:crypto";
 import { verifyCortanaPopProof } from "../src/security/cortana-pop.js";
 
 const { privateKey, publicKey } = generateKeyPairSync("ec", { namedCurve: "prime256v1" });
@@ -40,11 +40,9 @@ function signed(overrides: Partial<{
 }
 
 function awaitHash(value: Buffer): string {
-  const { createHash } = require("node:crypto") as typeof import("node:crypto");
   return createHash("sha256").update(value).digest("base64url");
 }
 function awaitTokenHash(value: string): string {
-  const { createHash } = require("node:crypto") as typeof import("node:crypto");
   return createHash("sha256").update(value, "utf8").digest("base64url");
 }
 
