@@ -345,3 +345,14 @@
 - A second hardening pass added explicit Android URI validation for HTTPS endpoint configuration and expanded RN emulator assertions: `sendText()` must fail closed when no endpoint is configured; idle cancellation must return false; idle reset must resolve; the legacy no-argument focus notification must remain safe.
 - New CI runs #45012904259 (latest RN smoke with the expanded assertions), #45012901196 (Android probe), and #45012901151 (backend) are still in progress at this checkpoint. Do not claim these additional assertions passed until their run logs show the markers.
 - The endpoint remains intentionally unset. There is no live chat endpoint, provider integration, session authentication, or end-to-end GPT response yet.
+
+
+## 004V-9 — proposal-only CortanaPoP verifier primitive (2026-11-22)
+
+- Added route-independent `verifyCortanaPopProof()` in `backend/server/src/security/cortana-pop.ts`.
+- Canonical verification binds uppercase HTTP method, exact origin-form path+query, SHA-256 of exact raw body bytes, timestamp, proof JTI and SHA-256 of access token; signature uses the existing P-256 SHA-256 verifier.
+- Rejects malformed method/target/timestamp/JTI/token, timestamp outside configured skew, and invalid signatures. Added positive and negative test vectors using ephemeral test-only ECDSA keys.
+- Backend CI run #45055266720 passed TypeScript typecheck, build, PostgreSQL migrations/idempotency verification and **47/47 tests** (six new CortanaPoP verifier tests included).
+- The verifier is deliberately not wired to any HTTP route. It does not itself authenticate tokens, enforce scopes, claim replay IDs, or capture trusted raw request bytes. Public integration remains blocked on independent protocol review, canonicalization interoperability vectors, and full route-level authorization/replay/idempotency tests.
+- The protocol remains custom proposal-only CortanaPoP, not RFC 9449 DPoP. No public API, provider integration or live chat endpoint has been deployed.
+- Latest Android probe and RN compatibility CI on this code commit are still running; see Actions for current status.
