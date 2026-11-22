@@ -59,6 +59,18 @@ jobs:
         working-directory: android/rn0594-compat
         run: yarn install --ignore-scripts --non-interactive --no-progress --ignore-engines
 
+      - name: Verify resolved Yarn lockfile
+        working-directory: android/rn0594-compat
+        run: test -s yarn.lock
+
+      - name: Upload resolved Yarn lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: cortana-rn0594-yarn-lock
+          path: android/rn0594-compat/yarn.lock
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Generate compatibility JS bundle
         working-directory: android/rn0594-compat
         run: |
