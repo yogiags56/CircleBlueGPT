@@ -19,6 +19,11 @@ const App = () => {
     console.log('RN0594_NATIVE_VERSION_MISMATCH:' + JSON.stringify(version));
   }
 
+  const cortanaBridge = NativeModules.CortanaBridge;
+  cortanaBridge.getBridgeStatus()
+    .then(status => console.log('CORTANA_BRIDGE_MODULE_OK:' + status))
+    .catch(error => console.log('CORTANA_BRIDGE_MODULE_ERROR:' + error.code));
+
   const native = NativeModules.RN0594Probe;
   const events = new NativeEventEmitter(native);
   events.addListener('rn0594Probe', value => {
