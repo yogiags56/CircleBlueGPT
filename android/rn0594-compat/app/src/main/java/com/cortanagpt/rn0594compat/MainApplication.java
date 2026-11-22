@@ -15,7 +15,9 @@ public final class MainApplication extends Application implements ReactApplicati
     private final ReactNativeHost reactNativeHost = new ReactNativeHost(this) {
         @Override
         public boolean getUseDeveloperSupport() {
-            return BuildConfig.DEBUG;
+            // The CI smoke test must load the bundled index.android.bundle,
+            // not attempt to connect to a Metro server that is absent in CI.
+            return false;
         }
 
         @Override
