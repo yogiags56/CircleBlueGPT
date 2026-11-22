@@ -315,7 +315,7 @@
 - Follow-up run #17 (`44998951927`) also reached successful API 28 smoke test and artifact upload; its Actions job was still completing post-job cleanup at the time of inspection. Run #16 is the completed canonical evidence.
 - Run links: https://github.com/yogiags56/CircleBlueGPT/actions/runs/44998947302 ; https://github.com/yogiags56/CircleBlueGPT/actions/runs/44998951982 ; https://github.com/yogiags56/CircleBlueGPT/actions/runs/44998952019
 - **Scope limitation:** this validates a minimal isolated RN 0.59.4 Android shell and a test NativeModule. It does not yet validate the original Cortana React Native bundle, Newman bridge implementation, persona renderer, Microsoft service replacement, or a GPT-backed conversation.
-- **Remaining reproducibility item:** no committed `yarn.lock` was present in the shell at validation time. Generate and commit a lockfile from the verified dependency resolution before treating builds as fully reproducible.
+- **Reproducibility:** android/rn0594-compat/yarn.lock is now committed; CI installs with --frozen-lockfile. The frozen-lockfile build and API 28 smoke test passed in run #45000494436.
 
 ### Next implementation slice — 004V-8
 
@@ -324,3 +324,14 @@
 3. Keep the original `sendQuery(text, boolean)` boolean semantics unresolved until the original bundle behavior is proven; do not infer it.
 4. Preserve the existing `onUserManualInput()` no-argument focus hook and the text-only MVP boundary.
 5. Begin Cortana UI/persona restoration only after the bridge adapter lifecycle and event behavior are validated. Keep proprietary PERS payloads and the original APK out of Git.
+
+
+## 004V-8 — initial RN bridge integration in CI validation (2026-11-22)
+
+- Committed the resolved Yarn lockfile and enabled frozen installs. Run #45000494436 passed dependency install, JS bundle, APK assembly, API 28 bridge smoke test and APK artifact upload.
+- Added CortanaBridgeModule and CortanaBridgePackage in the RN 0.59.4 shell, registering a text-only API over the validated AndroidBridgeRuntime.
+- Copied the bridge runtime, dispatcher, timeout scheduler, BridgeCore, HTTPS gateway, protocol codec, DTOs and legacy conversation adapter into the isolated shell; added Gson 2.11.0.
+- Added HTTPS-only network policy, an empty endpoint resource that fails closed, and lifecycle teardown.
+- JS smoke test now checks that CortanaBridge is registered and reports endpoint-not-configured; it makes no network call.
+- New integration CI is queued at run #45001227289. The new module has not yet passed compilation/emulator validation.
+- This is a native adapter integration, not a live GPT conversation. Endpoint configuration, backend contract interoperability, real device/network test, memory selection, and legacy sendQuery(text, boolean) semantics remain open.
