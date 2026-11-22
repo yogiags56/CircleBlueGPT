@@ -24,6 +24,26 @@ const App = () => {
     .then(status => console.log('CORTANA_BRIDGE_MODULE_OK:' + status))
     .catch(error => console.log('CORTANA_BRIDGE_MODULE_ERROR:' + error.code));
 
+  cortanaBridge.sendText('CI fail-closed probe')
+    .then(() => console.log('CORTANA_BRIDGE_FAIL_CLOSED_UNEXPECTED_RESOLVE'))
+    .catch(error => {
+      if (error.code === 'E_BRIDGE_UNAVAILABLE') {
+        console.log('CORTANA_BRIDGE_FAIL_CLOSED_OK');
+      } else {
+        console.log('CORTANA_BRIDGE_FAIL_CLOSED_UNEXPECTED:' + error.code);
+      }
+    });
+
+  cortanaBridge.cancelListening()
+    .then(cancelled => console.log('CORTANA_BRIDGE_CANCEL_IDLE_OK:' + String(cancelled)))
+    .catch(error => console.log('CORTANA_BRIDGE_CANCEL_ERROR:' + error.code));
+
+  cortanaBridge.resetConversation()
+    .then(() => console.log('CORTANA_BRIDGE_RESET_IDLE_OK'))
+    .catch(error => console.log('CORTANA_BRIDGE_RESET_ERROR:' + error.code));
+
+  cortanaBridge.onUserManualInput();
+
   const native = NativeModules.RN0594Probe;
   const events = new NativeEventEmitter(native);
   events.addListener('rn0594Probe', value => {
