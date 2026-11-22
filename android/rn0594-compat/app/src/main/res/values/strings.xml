@@ -1,0 +1,4 @@
+<resources>
+    <!-- Set this in a deployment-specific resource overlay; never commit credentials here. -->
+    <string name="cortanagpt_chat_endpoint"></string>
+</resources>
