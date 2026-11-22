@@ -1,11 +1,11 @@
 # CortanaGPT — Recovery Checkpoint
 
-**Checkpoint date:** 2026-11-21  
+**Checkpoint date:** 2026-11-22  
 **Project:** CortanaGPT / CircleBlueGPT  
 **Repository:** https://github.com/yogiags56/CircleBlueGPT  
 **Working branch:** `stage-004r/bootstrap`  
 **Pull request:** #1 — draft, targets `main`  
-**Current milestone:** Stage 004V — platform-neutral bridge core  
+**Current milestone:** Stage 004V-7 — RN 0.59.4 compatibility shell validated; next 004V-8  
 **Checkpoint status:** durable handoff; continue from this file and the current branch HEAD.
 
 > Recovery rule: when a conversation is interrupted, first read this file, then inspect the current branch HEAD and the latest GitHub Actions runs. Do not infer progress from chat history alone. Treat the repository and CI evidence as authoritative.
@@ -205,3 +205,25 @@ Workflow run #48 (`44935062656`) successfully installed JS deps, generated the R
 ## RN 0.59.4 runtime bootstrap — SoLoader initialization (2026-11-22)
 
 Added `SoLoader.init(this, false)` to `MainApplication.onCreate()` before React Native host startup, matching the legacy RN Android bootstrap. Run #54 (`44935272285`) passed bundle and APK assembly; API28 emulator gate still running at last check and does not include this fix. Run #57 (`44935575432`) includes SoLoader and is in progress. Runtime parity/Promise/event checks remain unvalidated until emulator workflow succeeds.
+
+## Latest continuation — RN 0.59.4 runtime compatibility passed (2026-11-22)
+
+Verified current branch `stage-004r/bootstrap`, commit `9cec35c89a49fa62872b9225870a2668a010c149`.
+
+- RN compatibility workflow run #16 (`44998947302`) completed successfully. Dependency installation, JS bundle generation, legacy APK assembly, API 28 emulator startup, bridge smoke test and APK artifact upload all passed.
+- Smoke-test success is gated on all four markers: native PlatformConstants reports RN 0.59.4; NativeModule Promise resolves; Promise rejection is handled; DeviceEventManagerModule event reaches JavaScript.
+- Android probe run #18 (`44998951982`) passed host-JVM policy tests, APK assembly and API 35 instrumentation; artifact upload succeeded.
+- Backend CI run #19 (`44998952019`) passed 41/41 tests.
+- Run links: https://github.com/yogiags56/CircleBlueGPT/actions/runs/44998947302 ; https://github.com/yogiags56/CircleBlueGPT/actions/runs/44998951982 ; https://github.com/yogiags56/CircleBlueGPT/actions/runs/44998952019
+- Scope: the isolated compatibility shell and its test NativeModule are validated. The original Cortana bundle, Newman bridge, persona renderer and GPT conversation are NOT yet integrated or validated.
+- The shell still has no committed `yarn.lock`; deterministic dependency pinning remains open. Do not claim fully reproducible builds until lockfile is committed and CI passes with `--frozen-lockfile`.
+
+### Next work — Stage 004V-8
+
+1. Obtain and commit `yarn.lock` from the verified CI dependency resolution; switch the workflow to `yarn install --frozen-lockfile`.
+2. Integrate the existing `AndroidBridgeRuntime` through a narrow RN 0.59.4 NativeModule adapter, preserving explicit lifecycle ownership and main-thread callback delivery.
+3. Test text submission, response events, cancellation, reset, runtime teardown and error propagation.
+4. Keep the legacy `sendQuery(text, boolean)` boolean semantics unresolved until proven from original bundle evidence. `onUserManualInput()` remains a no-argument focus hook, never a query submission.
+5. Keep voice, cards and legacy skills outside the first text-only MVP. Do not patch the immutable original APK, commit proprietary persona payloads/secrets, or merge PR #1/main without explicit approval.
+
+Repository status, roadmap and this checkpoint were synchronized after observing the successful Actions runs. These documentation changes do not alter application code or CI evidence.
