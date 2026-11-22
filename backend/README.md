@@ -76,3 +76,10 @@ The SQL file is an initial development migration, not a production migration app
 `server/src/security/cortana-pop.ts` implements the proposal's detached-signature canonicalization and P-256 verification over the exact raw body bytes, uppercase method, origin-form path+query, timestamp, proof ID and access-token hash. It rejects malformed targets, invalid timestamp windows, malformed IDs/tokens and invalid signatures. Unit tests use ephemeral test-only keys.
 
 This helper intentionally does not consume replay IDs, authenticate session tokens, authorize scopes, or establish a trusted request-body capture boundary. A future route must, in order: obtain the token and active session from the token repository; capture exact raw bytes and trusted origin-form target; call the verifier; atomically claim the proof ID in Redis; enforce scope and quotas; then enter the idempotency/provider pipeline. The exact order and canonicalization still require independent review and cross-language test vectors. Do not wire this helper to a public route yet.
+
+
+## Provider adapter boundary (implemented, not wired to a route)
+
+`server/src/provider/openai-compatible.ts` contains an injectable OpenAI-compatible chat provider adapter for the backend only. It accepts a configured HTTPS endpoint, server-side API key and model name; validates bounded message input; disables redirects; applies a request timeout; limits response bytes before JSON parsing; validates the assistant response shape; and maps upstream failures to stable internal error codes without forwarding provider diagnostics.
+
+The adapter is tested with an injected fake fetch implementation. No provider endpoint, model, key or deployment secret is committed. The adapter is not registered in Fastify, and no chat endpoint calls it. Before wiring it into a route, the backend still needs reviewed session/PoP authentication, scope enforcement, replay claim, quotas, durable idempotency orchestration, cancellation semantics, privacy/retention policy and provider spend controls.
