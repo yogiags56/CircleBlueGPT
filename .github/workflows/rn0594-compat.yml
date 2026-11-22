@@ -57,7 +57,20 @@ jobs:
 
       - name: Install legacy JavaScript dependencies with Babel resolutions
         working-directory: android/rn0594-compat
-        run: yarn install --ignore-scripts --non-interactive --no-progress --ignore-engines
+        run: yarn install --frozen-lockfile --ignore-scripts --non-interactive --no-progress --ignore-engines
+
+      - name: Commit generated Yarn lockfile
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add android/rn0594-compat/yarn.lock
+          if ! git diff --cached --quiet; then
+            git commit -m "build: lock RN 0.59.4 dependency graph"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
 
       - name: Verify resolved Yarn lockfile
         working-directory: android/rn0594-compat
