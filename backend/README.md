@@ -108,3 +108,11 @@ The route is intentionally not registered by `buildApp` or `main`. It is an opt-
 The composition function validates that the server-owned Cortana persona instruction is non-empty and bounded, that the output-token limit is bounded, and that provider endpoint/key/model configuration passes the provider's HTTPS and secret-shape checks. Unit tests cover those fail-fast configuration boundaries.
 
 This is deliberately not called from `main.ts` and does not enable a production endpoint. There is still no enrollment/issuance route, no environment-secret wiring for the provider, no independent CortanaPoP review, and no end-to-end test using a real signed installation session. The next safe step is integration testing the composition root with ephemeral PostgreSQL/Redis and deterministic local provider mocks, then a separate security review before any route activation.
+
+## Per-installation chat rate limiting (004V-16; opt-in composition)
+
+`server/src/security/chat-rate-limit-store.ts` implements an atomic Redis fixed-window counter keyed by a SHA-256 digest of the authenticated installation session ID. The Lua script combines INCR and first-hit EXPIRE atomically, avoiding races between concurrent requests.
+
+The opt-in chat composition wires the limiter into the authenticated route with a default policy of 20 requests per installation per 60-second window. The policy can be lowered or raised explicitly through `rateLimitRequestsPerMinute` (bounded to 1–1000). The route emits standard operational headers (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`), returns HTTP 429 with `Retry-After` when exceeded, and fails closed with HTTP 503 if Redis cannot enforce the policy.
+
+The rate-limit store and route behavior have dedicated tests for boundary, concurrent consumption, session isolation, rejection, and unavailable-store behavior. This is a per-installation protection layer, not a complete abuse/cost policy: global provider budget ceilings, account-level aggregation, enrollment throttling, IP/network edge controls, and operational alerting remain release requirements.
