@@ -120,3 +120,32 @@ test("rejects duplicate proof ID and insufficient scope", async () => {
   const denied = await authenticateCortanaRequest(makeRequest(), noScope.sessions, noScope.replay);
   assert.deepEqual(denied, { authenticated: false, code: "INSUFFICIENT_SCOPE" });
 });
+
+
+test("fails closed when session storage is unavailable", async () => {
+  const deps = dependencies();
+  deps.sessions.authenticate = async () => { throw new Error("database unavailable"); };
+  await assert.rejects(
+    authenticateCortanaRequest(makeRequest(), deps.sessions, deps.replay),
+    /database unavailable/
+  );
+  assert.equal(deps.calls.length, 0);
+});
+
+test("fails closed when replay storage is unavailable", async () => {
+  const deps = dependencies();
+  deps.replay.claim = async () => { throw new Error("redis unavailable"); };
+  await assert.rejects(
+    authenticateCortanaRequest(makeRequest(), deps.sessions, deps.replay),
+    /redis unavailable/
+  );
+});
+
+test("rejects malformed proof timestamps before session lookup", async () => {
+  const deps = dependencies();
+  const request = makeRequest();
+  request.headers.timestamp = "01795392000";
+  const result = await authenticateCortanaRequest(request, deps.sessions, deps.replay);
+  assert.deepEqual(result, { authenticated: false, code: "INVALID_PROOF_HEADERS" });
+  assert.equal(deps.calls.length, 0);
+});
