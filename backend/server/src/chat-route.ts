@@ -9,6 +9,13 @@ export interface ChatRouteDependencies {
   authenticate(input: AuthenticatedRequestInput): Promise<AuthenticatedRequestResult>;
   chat: Pick<ChatCompletionService, "complete">;
   maxOutputTokens: number;
+  rateLimit?: {
+    consume(sessionId: string, limit: number, windowSeconds: number): Promise<{
+      allowed: boolean; limit: number; remaining: number; resetAfterSeconds: number;
+    }>;
+    limit: number;
+    windowSeconds: number;
+  };
 }
 
 const SECURITY_HEADERS = [
@@ -95,6 +102,25 @@ export function registerChatRoute(
       return reply.code(forbidden ? 403 : 401).send(
         errorBody(authentication.code, forbidden ? "The session lacks permission for this operation." : "Authentication failed.")
       );
+    }
+
+    if (dependencies.rateLimit) {
+      try {
+        const decision = await dependencies.rateLimit.consume(
+          authentication.session.sessionId,
+          dependencies.rateLimit.limit,
+          dependencies.rateLimit.windowSeconds
+        );
+        reply.header("x-ratelimit-limit", String(decision.limit));
+        reply.header("x-ratelimit-remaining", String(decision.remaining));
+        reply.header("x-ratelimit-reset", String(decision.resetAfterSeconds));
+        if (!decision.allowed) {
+          reply.header("retry-after", String(decision.resetAfterSeconds));
+          return reply.code(429).send(errorBody("CHAT_RATE_LIMITED", "The request limit for this installation has been reached. Try again after the reset window."));
+        }
+      } catch {
+        return reply.code(503).send(errorBody("RATE_LIMIT_UNAVAILABLE", "The request protection service is temporarily unavailable."));
+      }
     }
 
     let result: ChatServiceResult;
