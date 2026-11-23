@@ -60,14 +60,17 @@ export function registerChatSubsystem(
   });
   const chat = new ChatCompletionService(idempotency, provider, {
     systemInstruction: config.personaSystemInstruction,
-    maxOutputTokens: config.maxOutputTokens,
-    rateLimit: { consume: (sessionId, limit, windowSeconds) => rateLimit.consume(sessionId, limit, windowSeconds),
-      limit: rateLimitRequestsPerMinute, windowSeconds: 60 }
+    maxOutputTokens: config.maxOutputTokens
   });
 
   registerChatRoute(app, {
     authenticate: input => authenticateCortanaRequest(input, sessions, replay),
     chat,
-    maxOutputTokens: config.maxOutputTokens
+    maxOutputTokens: config.maxOutputTokens,
+    rateLimit: {
+      consume: (sessionId, limit, windowSeconds) => rateLimit.consume(sessionId, limit, windowSeconds),
+      limit: rateLimitRequestsPerMinute,
+      windowSeconds: 60
+    }
   });
 }
