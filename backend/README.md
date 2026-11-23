@@ -92,3 +92,10 @@ The adapter is tested with an injected fake fetch implementation. No provider en
 Completed retries return the stored response without another provider call. Requests already accepted/running return an in-progress result; failed/cancelled records are not automatically retried. If provider execution fails, the record is marked failed. If the provider succeeds but persisting its response fails, the record is deliberately left running and the service returns a normalized persistence error—this avoids an automatic second billable call, but requires a future recovery/reconciliation workflow.
 
 This is a service layer only. It is not registered as a Fastify route. No HTTP raw-body parser, duplicate-header adapter, session guard composition, quota enforcement, cancellation endpoint, or live provider configuration has been connected.
+
+
+## Opt-in chat HTTP adapter (not enabled in the server)
+
+`server/src/chat-route.ts` provides a Fastify `POST /v1/chat/completions` adapter and installs a raw-buffer JSON parser so the CortanaPoP verifier receives the exact request bytes. It rejects duplicate security-sensitive headers, malformed/unknown JSON fields, client-supplied system roles, invalid request IDs, and invalid request targets before calling the chat service. It invokes the injected authentication guard with the raw body and trusted origin-form request target, requires `chat:send`, and maps authentication, idempotency, provider and persistence outcomes to stable HTTP responses.
+
+The route is intentionally not registered by `buildApp` or `main`. It is an opt-in adapter for isolated tests and later reviewed integration. No production provider key, route activation, enrollment endpoint, quota policy, or public deployment is configured. The caller must supply the real `SessionTokenRepository`, `ProofReplayStore`, and `ChatCompletionService` dependencies only after the protocol and operational controls have passed independent review.
