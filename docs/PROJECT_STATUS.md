@@ -387,3 +387,14 @@
 - This composition root is not called by `main.ts`; the route remains inactive in the running server. No provider credentials were added, and no public endpoint was enabled.
 - CI for commit `b9b4ace` (composition source) and `ec46bfe` (tests) was in progress at the time of this update. Do not mark this stage validated until backend CI passes on the latest documentation commit.
 - Next: deterministic end-to-end composition test with PostgreSQL/Redis test infrastructure and a local provider mock; then independent review of the custom CortanaPoP protocol before considering route activation.
+
+
+## 004V-15 — authenticated chat end-to-end integration test (2026-11-23)
+
+- Added `server/test/chat-integration.test.ts`. The test creates a real P-256 keypair, inserts an active installation session in PostgreSQL, issues a real opaque session token, signs the proposal CortanaPoP canonical request, verifies it through the real authenticated-request guard and Redis proof replay store, and calls the real Fastify chat adapter and ChatCompletionService.
+- The external provider is deliberately replaced by a deterministic in-process fake. This proves request/authentication/database/replay/idempotency/response integration without sending user data to a real provider or incurring provider charges.
+- Assertions cover the first successful response, a retry with a fresh proof ID but stable request ID and identical raw body, stored-response replay without a second provider call, and a 409 conflict when the same request ID is reused with different body bytes.
+- Backend workflow run #45203276478 passed on commit `6bdae4c`: dependency install, TypeScript typecheck, build, first database migration, idempotent second migration, and all unit/infrastructure/integration tests.
+- Android probe run #45203276476 and RN 0.59.4 run #45203276653 were still in progress at the time of this status update; their completion must be checked separately.
+- This is an integration test with a mock provider, not a live GPT conversation. The production chat route remains disabled; no provider key was added. The custom CortanaPoP protocol still requires independent cryptographic review before public activation.
+- Next: inspect and resolve any cross-platform CI regressions, then add a separately reviewed enrollment/bootstrap flow and an explicit quota/rate-limit policy before considering production route registration.
