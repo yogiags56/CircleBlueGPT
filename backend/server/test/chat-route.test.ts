@@ -28,11 +28,20 @@ function makeApp(options: {
   authError?: boolean;
   chatResult?: unknown;
   chatError?: Error;
+  rateLimit?: { allowed: boolean; limit: number; remaining: number; resetAfterSeconds: number };
+  rateLimitError?: boolean;
 } = {}) {
   const calls: { auth?: AuthenticatedRequestInput; chat?: unknown } = {};
   const app = buildApp(config, { database: async () => true, redis: async () => true });
   registerChatRoute(app, {
     maxOutputTokens: 1024,
+    ...(options.rateLimit || options.rateLimitError ? { rateLimit: {
+      limit: 20, windowSeconds: 60,
+      async consume() {
+        if (options.rateLimitError) throw new Error("redis offline");
+        return options.rateLimit ?? { allowed: true, limit: 20, remaining: 19, resetAfterSeconds: 60 };
+      }
+    } } : {}),
     authenticate: async input => {
       calls.auth = input;
       if (options.authError) throw new Error("storage offline");
@@ -181,4 +190,32 @@ test("maps idempotency conflicts and provider failures to stable responses", asy
     await conflict.app.close();
     await failed.app.close();
   }
+});
+
+test("returns 429 and Retry-After when the authenticated installation exceeds its rate limit", async () => {
+  const { app, calls } = makeApp({ rateLimit: { allowed: false, limit: 20, remaining: 0, resetAfterSeconds: 17 } });
+  try {
+    const response = await app.inject({
+      method: "POST", url: "/v1/chat/completions", headers,
+      payload: JSON.stringify({ messages: [{ role: "user", content: "Hi" }] })
+    });
+    assert.equal(response.statusCode, 429);
+    assert.equal(response.json().error.code, "CHAT_RATE_LIMITED");
+    assert.equal(response.headers["retry-after"], "17");
+    assert.equal(response.headers["x-ratelimit-remaining"], "0");
+    assert.equal(calls.chat, undefined);
+  } finally { await app.close(); }
+});
+
+test("fails closed when the rate-limit store is unavailable", async () => {
+  const { app, calls } = makeApp({ rateLimitError: true });
+  try {
+    const response = await app.inject({
+      method: "POST", url: "/v1/chat/completions", headers,
+      payload: JSON.stringify({ messages: [{ role: "user", content: "Hi" }] })
+    });
+    assert.equal(response.statusCode, 503);
+    assert.equal(response.json().error.code, "RATE_LIMIT_UNAVAILABLE");
+    assert.equal(calls.chat, undefined);
+  } finally { await app.close(); }
 });
