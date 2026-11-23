@@ -99,3 +99,12 @@ This is a service layer only. It is not registered as a Fastify route. No HTTP r
 `server/src/chat-route.ts` provides a Fastify `POST /v1/chat/completions` adapter and installs a raw-buffer JSON parser so the CortanaPoP verifier receives the exact request bytes. It rejects duplicate security-sensitive headers, malformed/unknown JSON fields, client-supplied system roles, invalid request IDs, and invalid request targets before calling the chat service. It invokes the injected authentication guard with the raw body and trusted origin-form request target, requires `chat:send`, and maps authentication, idempotency, provider and persistence outcomes to stable HTTP responses.
 
 The route is intentionally not registered by `buildApp` or `main`. It is an opt-in adapter for isolated tests and later reviewed integration. No production provider key, route activation, enrollment endpoint, quota policy, or public deployment is configured. The caller must supply the real `SessionTokenRepository`, `ProofReplayStore`, and `ChatCompletionService` dependencies only after the protocol and operational controls have passed independent review.
+
+
+## Explicit chat subsystem composition (004V-14; opt-in only)
+
+`server/src/chat-subsystem.ts` is the composition root for the chat path. It constructs the PostgreSQL session-token and idempotency repositories, Redis proof replay store, HTTPS-only OpenAI-compatible provider, chat orchestration service, and authenticated Fastify route from injected infrastructure and explicit persona/provider policy.
+
+The composition function validates that the server-owned Cortana persona instruction is non-empty and bounded, that the output-token limit is bounded, and that provider endpoint/key/model configuration passes the provider's HTTPS and secret-shape checks. Unit tests cover those fail-fast configuration boundaries.
+
+This is deliberately not called from `main.ts` and does not enable a production endpoint. There is still no enrollment/issuance route, no environment-secret wiring for the provider, no independent CortanaPoP review, and no end-to-end test using a real signed installation session. The next safe step is integration testing the composition root with ephemeral PostgreSQL/Redis and deterministic local provider mocks, then a separate security review before any route activation.
