@@ -1,12 +1,6 @@
-import type {
-  ChatCompletionResult,
-  ChatMessage,
-  OpenAICompatibleChatProvider
-} from "./provider/openai-compatible.js";
-import type {
-  IdempotencyBeginResult,
-  IdempotencyRepository
-} from "./idempotency/repository.js";
+import { createHash } from "node:crypto";
+import type { ChatCompletionResult, ChatMessage } from "./provider/openai-compatible.js";
+import { IdempotencyConflictError, type IdempotencyBeginResult } from "./idempotency/repository.js";
 
 export interface ChatServiceInput {
   sessionId: string;
@@ -34,7 +28,7 @@ export type ChatServiceResult =
 
 export class ChatServiceError extends Error {
   constructor(readonly code:
-    "INVALID_CHAT_INPUT" | "IDEMPOTENCY_CONFLICT" | "CHAT_PROVIDER_FAILED") {
+    "INVALID_CHAT_INPUT" | "IDEMPOTENCY_CONFLICT" | "CHAT_PROVIDER_FAILED" | "CHAT_RESULT_PERSISTENCE_FAILED") {
     super(code);
     this.name = "ChatServiceError";
   }
@@ -82,11 +76,10 @@ export class ChatCompletionService {
 
     let begun: IdempotencyBeginResult;
     try {
-      const { createHash } = await import("node:crypto");
       const digest = createHash("sha256").update(input.rawBody).digest("hex");
       begun = await this.idempotency.begin(input.sessionId, input.requestId, digest);
     } catch (error) {
-      if (error instanceof Error && error.name === "IdempotencyConflictError") {
+      if (error instanceof IdempotencyConflictError) {
         throw new ChatServiceError("IDEMPOTENCY_CONFLICT");
       }
       throw error;
@@ -100,27 +93,35 @@ export class ChatCompletionService {
       ...input.messages
     ];
 
+    let completion: ChatCompletionResult;
     try {
-      const completion = await this.provider.complete({
+      completion = await this.provider.complete({
         messages,
         maxOutputTokens: input.maxOutputTokens
       });
-      const response: ChatServiceResponse = {
-        id: input.requestId,
-        object: "chat.completion",
-        choices: [{
-          index: 0,
-          message: { role: "assistant", content: completion.text },
-          finish_reason: "stop"
-        }]
-      };
-      await this.idempotency.complete(input.sessionId, input.requestId, response);
-      return { kind: "completed", response, replayed: false };
     } catch {
-      // Do not expose provider diagnostics or credentials to the caller.
+      // Only provider failures transition the record to failed.
       await this.idempotency.fail(input.sessionId, input.requestId);
       throw new ChatServiceError("CHAT_PROVIDER_FAILED");
     }
+
+    const response: ChatServiceResponse = {
+      id: input.requestId,
+      object: "chat.completion",
+      choices: [{
+        index: 0,
+        message: { role: "assistant", content: completion.text },
+        finish_reason: "stop"
+      }]
+    };
+    try {
+      await this.idempotency.complete(input.sessionId, input.requestId, response);
+    } catch {
+      // Keep the record running: a retry must not make a second billable call
+      // when the provider already answered but durable response storage failed.
+      throw new ChatServiceError("CHAT_RESULT_PERSISTENCE_FAILED");
+    }
+    return { kind: "completed", response, replayed: false };
   }
 }
 
