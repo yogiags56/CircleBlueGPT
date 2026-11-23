@@ -85,3 +85,18 @@ The Android probe now has a strict protocol codec and an injectable HTTPS gatewa
 
 This is a client-side transport implementation against an injected/mock endpoint, not evidence that a backend chat route exists or is deployed. No GPT provider integration is wired.
 
+
+
+## CortanaPoP request-header contract (proposal; not wired)
+
+The authenticated request proposal uses these exact headers:
+
+- `Authorization: CortanaPoP {43-character-base64url-access-token}`
+- `X-Cortana-Proof: {base64url-DER-ECDSA-signature}`
+- `X-Cortana-Timestamp: {Unix-seconds-decimal}`
+- `X-Cortana-Proof-ID: {fresh-unique-base64url-id}`
+- `X-Request-ID: {client-idempotency-id}` for chat requests
+
+The timestamp and proof ID are signed canonical fields, not optional metadata. Generate a new proof ID and signature for each HTTP attempt, including retries; keep the same request ID only when retrying the same logical chat operation with the exact same body. The server must reject duplicate security-sensitive headers and must verify exact raw body bytes before JSON parsing.
+
+The route-independent backend guard in `backend/server/src/security/authenticated-request.ts` verifies the token's active session, stored P-256 JWK thumbprint binding, detached signature, five-minute atomic Redis replay claim and required scope. It is intentionally not connected to Fastify until the custom scheme receives independent review and route-level raw-body/header handling is implemented.
