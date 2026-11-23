@@ -377,3 +377,13 @@
 - First CI run exposed one TypeScript exact-optional-property-types issue; fixed by omitting `nowSeconds` when undefined. A follow-up commit added storage-outage tests.
 - Latest validation for the follow-up guard and test commits is still running/queued. Do not mark 004V-11 validated until backend CI passes on the latest commit.
 - This remains a route-independent proposal-only helper. It is not registered in Fastify. No public enrollment, chat, rotation, revocation or provider route is live. Independent cryptographic review, exact raw-body capture, duplicate-header rejection, HTTP error mapping, quotas, idempotency orchestration and privacy/retention controls remain release gates.
+
+
+## 004V-14 — explicit chat subsystem composition (2026-11-23)
+
+- Added `backend/server/src/chat-subsystem.ts` as an explicit composition root for PostgreSQL session-token/idempotency repositories, Redis proof replay, HTTPS-only provider, ChatCompletionService, and the opt-in Fastify chat route.
+- Added `backend/server/test/chat-subsystem.test.ts` for fail-fast validation of persona instruction, output-token policy, and provider configuration.
+- Updated `backend/README.md` with the opt-in boundary and remaining release gates.
+- This composition root is not called by `main.ts`; the route remains inactive in the running server. No provider credentials were added, and no public endpoint was enabled.
+- CI for commit `b9b4ace` (composition source) and `ec46bfe` (tests) was in progress at the time of this update. Do not mark this stage validated until backend CI passes on the latest documentation commit.
+- Next: deterministic end-to-end composition test with PostgreSQL/Redis test infrastructure and a local provider mock; then independent review of the custom CortanaPoP protocol before considering route activation.
