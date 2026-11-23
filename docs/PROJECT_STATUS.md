@@ -398,3 +398,13 @@
 - Android probe run #45203276476 and RN 0.59.4 run #45203276653 were still in progress at the time of this status update; their completion must be checked separately.
 - This is an integration test with a mock provider, not a live GPT conversation. The production chat route remains disabled; no provider key was added. The custom CortanaPoP protocol still requires independent cryptographic review before public activation.
 - Next: inspect and resolve any cross-platform CI regressions, then add a separately reviewed enrollment/bootstrap flow and an explicit quota/rate-limit policy before considering production route registration.
+
+## 004V-16 — Redis per-installation chat rate limiting (2026-11-24)
+
+- Added `backend/server/src/security/chat-rate-limit-store.ts`: atomic Redis Lua fixed-window counter, keyed by a SHA-256 digest of the authenticated installation session ID.
+- Wired the limiter into the opt-in authenticated chat route through `chat-subsystem.ts`. Default policy: 20 requests per installation per 60 seconds; configurable bound 1–1000 requests/minute.
+- Route returns HTTP 429 with `Retry-After` and rate-limit headers when exceeded. Redis enforcement failure returns HTTP 503; requests do not reach the provider when the limiter is unavailable.
+- Added Redis integration tests for allowed/blocked boundaries, per-session isolation, concurrent requests, and invalid policy values. Added HTTP tests for 429 and fail-closed 503, plus composition policy tests.
+- This remains a per-installation limiter only. Global provider spend ceilings, account-wide aggregation, enrollment abuse controls, edge/network throttling, and alerting remain open.
+- The chat route remains opt-in and is not registered in `main.ts`. No live provider key or public endpoint is configured. CortanaPoP still requires independent cryptographic review.
+- CI validation is pending for the new source, test, and documentation commits.
