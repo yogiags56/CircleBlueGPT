@@ -7,6 +7,7 @@ import { IdempotencyRepository } from "./idempotency/repository.js";
 import { OpenAICompatibleChatProvider } from "./provider/openai-compatible.js";
 import { authenticateCortanaRequest } from "./security/authenticated-request.js";
 import { ProofReplayStore } from "./security/proof-replay-store.js";
+import { ChatRateLimitStore } from "./security/chat-rate-limit-store.js";
 import { SessionTokenRepository } from "./session/token-repository.js";
 
 export interface ChatSubsystemInfrastructure {
@@ -21,6 +22,7 @@ export interface ChatSubsystemConfig {
   personaSystemInstruction: string;
   maxOutputTokens: number;
   providerTimeoutMs?: number;
+  rateLimitRequestsPerMinute?: number;
 }
 
 /**
@@ -44,6 +46,11 @@ export function registerChatSubsystem(
 
   const sessions = new SessionTokenRepository(infrastructure.postgres);
   const replay = new ProofReplayStore(infrastructure.redis);
+  const rateLimit = new ChatRateLimitStore(infrastructure.redis);
+  const rateLimitRequestsPerMinute = config.rateLimitRequestsPerMinute ?? 20;
+  if (!Number.isInteger(rateLimitRequestsPerMinute) || rateLimitRequestsPerMinute < 1 || rateLimitRequestsPerMinute > 1000) {
+    throw new Error("INVALID_CHAT_RATE_LIMIT");
+  }
   const idempotency = new IdempotencyRepository(infrastructure.postgres);
   const provider = new OpenAICompatibleChatProvider({
     endpoint: config.providerEndpoint,
@@ -53,7 +60,9 @@ export function registerChatSubsystem(
   });
   const chat = new ChatCompletionService(idempotency, provider, {
     systemInstruction: config.personaSystemInstruction,
-    maxOutputTokens: config.maxOutputTokens
+    maxOutputTokens: config.maxOutputTokens,
+    rateLimit: { consume: (sessionId, limit, windowSeconds) => rateLimit.consume(sessionId, limit, windowSeconds),
+      limit: rateLimitRequestsPerMinute, windowSeconds: 60 }
   });
 
   registerChatRoute(app, {
