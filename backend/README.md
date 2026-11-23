@@ -83,3 +83,12 @@ This helper intentionally does not consume replay IDs, authenticate session toke
 `server/src/provider/openai-compatible.ts` contains an injectable OpenAI-compatible chat provider adapter for the backend only. It accepts a configured HTTPS endpoint, server-side API key and model name; validates bounded message input; disables redirects; applies a request timeout; limits response bytes before JSON parsing; validates the assistant response shape; and maps upstream failures to stable internal error codes without forwarding provider diagnostics.
 
 The adapter is tested with an injected fake fetch implementation. No provider endpoint, model, key or deployment secret is committed. The adapter is not registered in Fastify, and no chat endpoint calls it. Before wiring it into a route, the backend still needs reviewed session/PoP authentication, scope enforcement, replay claim, quotas, durable idempotency orchestration, cancellation semantics, privacy/retention policy and provider spend controls.
+
+
+## Chat orchestration service (implemented, not exposed)
+
+`server/src/chat-service.ts` now composes the durable idempotency repository with the server-side provider adapter. It hashes the exact raw request bytes, creates or replays the per-session request record, inserts the server-controlled system persona instruction, rejects client-supplied system messages, calls the provider once, and stores a normalized completion response under the original request ID.
+
+Completed retries return the stored response without another provider call. Requests already accepted/running return an in-progress result; failed/cancelled records are not automatically retried. If provider execution fails, the record is marked failed. If the provider succeeds but persisting its response fails, the record is deliberately left running and the service returns a normalized persistence error—this avoids an automatic second billable call, but requires a future recovery/reconciliation workflow.
+
+This is a service layer only. It is not registered as a Fastify route. No HTTP raw-body parser, duplicate-header adapter, session guard composition, quota enforcement, cancellation endpoint, or live provider configuration has been connected.
