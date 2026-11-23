@@ -47,3 +47,14 @@ test("rejects unconfigured or insecure provider settings during explicit composi
     /PROVIDER_NOT_CONFIGURED/
   );
 });
+
+test("rejects an invalid per-minute chat rate limit before registering the route", () => {
+  assert.throws(
+    () => registerChatSubsystem({} as never, infrastructure, { ...valid, rateLimitRequestsPerMinute: 0 }),
+    /INVALID_CHAT_RATE_LIMIT/
+  );
+  assert.throws(
+    () => registerChatSubsystem({} as never, infrastructure, { ...valid, rateLimitRequestsPerMinute: 1001 }),
+    /INVALID_CHAT_RATE_LIMIT/
+  );
+});
