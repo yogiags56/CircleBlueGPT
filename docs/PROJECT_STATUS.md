@@ -367,3 +367,13 @@
 - Backend CI run #45055528618 passed TypeScript typecheck, build, migrations/idempotency checks and **55/55 tests**. The suite includes six CortanaPoP verifier tests and eight provider adapter tests, including timeout and output-limit behavior.
 - RN compatibility run #45055533850 and Android probe run #45055533805 on the same commit are still in progress. Do not claim those newest cross-platform runs have passed until completed.
 - The provider adapter is not called by any route. There is still no live chat endpoint, provider deployment, production key, or end-to-end GPT conversation. Public route work remains gated on independent review of the custom CortanaPoP protocol, route-level authentication/authorization, replay/idempotency ordering, quotas, cancellation, and privacy policy.
+
+
+## 004V-11 — route-independent authenticated request guard (2026-11-23)
+
+- Added `server/src/security/authenticated-request.ts`. The helper strictly parses the proposal's authorization/proof/timestamp/proof-ID values; authenticates the opaque token; validates the stored P-256 JWK; compares its RFC 7638 thumbprint to the session binding with constant-time comparison; verifies the detached signature over method, exact origin-form target, raw body, timestamp, proof ID and token hash; atomically claims the proof ID in Redis for 300 seconds; and enforces the required session scope.
+- Added injected-interface tests for success, missing/malformed headers, inactive sessions, key-thumbprint mismatch, raw-body tampering, duplicate proof IDs, insufficient scopes, malformed timestamps, and fail-closed database/Redis outages.
+- Updated `backend/ANONYMOUS_SESSION_PROTOCOL.md` and `docs/ARCHITECTURE.md` to define mandatory `X-Cortana-Timestamp` and `X-Cortana-Proof-ID` headers, plus fresh proof IDs per HTTP attempt and stable request IDs per logical idempotent chat operation.
+- First CI run exposed one TypeScript exact-optional-property-types issue; fixed by omitting `nowSeconds` when undefined. A follow-up commit added storage-outage tests.
+- Latest validation for the follow-up guard and test commits is still running/queued. Do not mark 004V-11 validated until backend CI passes on the latest commit.
+- This remains a route-independent proposal-only helper. It is not registered in Fastify. No public enrollment, chat, rotation, revocation or provider route is live. Independent cryptographic review, exact raw-body capture, duplicate-header rejection, HTTP error mapping, quotas, idempotency orchestration and privacy/retention controls remain release gates.
