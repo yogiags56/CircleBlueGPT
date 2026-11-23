@@ -34,6 +34,7 @@ export function registerChatRoute(
   app: FastifyInstance,
   dependencies: ChatRouteDependencies
 ): void {
+  installRawJsonBodyParser(app);
   app.post("/v1/chat/completions", async (request, reply) => {
     const duplicates = duplicateSensitiveHeaders(request);
     if (duplicates.length > 0) {
