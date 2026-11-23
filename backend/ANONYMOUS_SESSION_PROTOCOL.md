@@ -121,7 +121,11 @@ Every authenticated request includes:
 
 - `Authorization: CortanaPoP {accessToken}`
 - `X-Cortana-Proof: {base64url-DER-ECDSA-signature}`
+- `X-Cortana-Timestamp: {UNIX-TIMESTAMP-SECONDS}` (decimal seconds, no leading zeroes)
+- `X-Cortana-Proof-ID: {unique-proof-jti}` (16–128 base64url characters, generated afresh for every HTTP attempt)
 - A client-generated unique `X-Request-ID` for chat requests.
+
+The timestamp and proof ID headers are mandatory. Their exact byte-for-byte values are included in the signed canonical message below. Header names are case-insensitive as required by HTTP; header values are not normalized. Reject duplicate instances of any security-sensitive header rather than choosing one.
 
 The CortanaPoP signature covers this exact UTF-8 canonical message (LF line endings, no trailing LF):
 
@@ -222,3 +226,17 @@ Responses should include a correlation ID that is safe to expose; do not echo se
 - Repository-level backend primitives and CI exist, but no public endpoint, production authentication boundary, provider adapter, deployment or production secret configuration exists yet.
 - The protocol has not undergone an independent cryptographic/security review.
 - Android API 19–22 enrollment behavior is intentionally unresolved and must not be enabled by a silent insecure fallback.
+
+
+### Current server-side verifier boundary (not a public route)
+
+The backend now contains `server/src/security/authenticated-request.ts`, a route-independent pipeline that:
+
+1. Strictly parses the `CortanaPoP {token}` authorization value and the proof, timestamp and proof-ID headers.
+2. Resolves the token to an active session using the session-token repository.
+3. validates the stored P-256 public JWK and compares its RFC 7638 thumbprint to the session binding.
+4. Verifies the signature over the exact method, origin-form target, raw body, timestamp, proof ID and token hash.
+5. Atomically claims the proof ID in Redis for 300 seconds.
+6. Enforces the route's required session scope.
+
+The helper accepts injected session and replay interfaces so the ordering and fail-closed outcomes can be unit-tested. Redis/database failures throw and must be converted to a generic server error at the HTTP boundary. This helper is still proposal-only, not wired to Fastify, and not independently reviewed. The HTTP adapter must capture raw bytes before JSON parsing, reject duplicate security headers, and derive the origin-form target from the trusted request object—not from forwarded headers.
