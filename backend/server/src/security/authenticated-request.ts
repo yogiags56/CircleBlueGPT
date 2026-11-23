@@ -93,7 +93,7 @@ export async function authenticateCortanaRequest(
     accessToken: match[1]!,
     signature,
     publicKey,
-    nowSeconds: input.nowSeconds
+    ...(input.nowSeconds === undefined ? {} : { nowSeconds: input.nowSeconds })
   });
   if (!verified.valid) return { authenticated: false, code: "INVALID_PROOF" };
 
