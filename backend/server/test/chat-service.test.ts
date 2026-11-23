@@ -14,6 +14,7 @@ function harness(initial?: IdempotencyBeginResult) {
   };
   let providerCalls = 0;
   let providerError = false;
+  let persistenceError = false;
   const store = {
     async begin(_sessionId: string, _requestId: string, digest: string) {
       calls.push("begin:" + digest);
@@ -22,6 +23,7 @@ function harness(initial?: IdempotencyBeginResult) {
     async markRunning() { calls.push("running"); },
     async complete(_sessionId: string, _requestId: string, response: unknown) {
       calls.push("complete:" + JSON.stringify(response));
+      if (persistenceError) throw new Error("database unavailable");
       beginResult = { kind: "replay", state: "completed", response };
     },
     async fail() { calls.push("fail"); beginResult = { kind: "replay", state: "failed", response: null }; }
@@ -48,7 +50,8 @@ function harness(initial?: IdempotencyBeginResult) {
   return {
     service, input, calls,
     get providerCalls() { return providerCalls; },
-    set providerError(value: boolean) { providerError = value; }
+    set providerError(value: boolean) { providerError = value; },
+    set persistenceError(value: boolean) { persistenceError = value; }
   };
 }
 
@@ -128,4 +131,17 @@ test("hashes exact raw request bytes for idempotency", async () => {
   await h.service.complete(h.input);
   const expected = createHash("sha256").update(h.input.rawBody).digest("hex");
   assert.equal(h.calls[0], "begin:" + expected);
+});
+
+
+test("does not mark a provider-successful request failed if result persistence fails", async () => {
+  const h = harness();
+  h.persistenceError = true;
+  await assert.rejects(
+    h.service.complete(h.input),
+    error => error instanceof ChatServiceError && error.code === "CHAT_RESULT_PERSISTENCE_FAILED"
+  );
+  assert.equal(h.providerCalls, 1);
+  assert.ok(h.calls[h.calls.length - 1]?.startsWith("complete:"));
+  assert.equal(h.calls.includes("fail"), false);
 });
