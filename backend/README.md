@@ -116,3 +116,10 @@ This is deliberately not called from `main.ts` and does not enable a production 
 The opt-in chat composition wires the limiter into the authenticated route with a default policy of 20 requests per installation per 60-second window. The policy can be lowered or raised explicitly through `rateLimitRequestsPerMinute` (bounded to 1–1000). The route emits standard operational headers (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`), returns HTTP 429 with `Retry-After` when exceeded, and fails closed with HTTP 503 if Redis cannot enforce the policy.
 
 The rate-limit store and route behavior have dedicated tests for boundary, concurrent consumption, session isolation, rejection, and unavailable-store behavior. This is a per-installation protection layer, not a complete abuse/cost policy: global provider budget ceilings, account-level aggregation, enrollment throttling, IP/network edge controls, and operational alerting remain release requirements.
+## First-install enrollment service (004V-17; not publicly routed)
+
+`server/src/enrollment/enrollment-service.ts` verifies a one-time P-256 proof for first installation. The signed canonical payload is versioned and binds the HTTP method, fixed enrollment path, challenge ID, 32-byte nonce, and RFC 7638 public-key thumbprint. The challenge repository atomically consumes a live enrollment challenge before signature verification; a failed proof therefore burns that challenge and cannot be retried.
+
+After successful verification, `SessionTokenRepository.createEnrolledSession` creates the installation identity and its initial opaque token in one PostgreSQL transaction. Only the public P-256 JWK and its thumbprint are persisted; the private key remains on the Android installation. The database's active-key unique index prevents duplicate active identities.
+
+The service is currently exercised directly by unit and PostgreSQL integration tests. It is intentionally not registered as a public HTTP endpoint: enrollment request throttling, deployment/attestation policy, abuse monitoring, and independent cryptographic review are still required before route activation.
