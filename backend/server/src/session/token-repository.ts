@@ -73,6 +73,47 @@ export class SessionTokenRepository {
     }
   }
 
+  /** Creates the installation identity and its first token in one transaction. */
+  async createEnrolledSession(
+    publicKeyJwk: unknown,
+    publicKeyThumbprint: string,
+    scopes: readonly string[] = ["chat:send", "session:revoke"],
+    tokenTtlSeconds = 900,
+    sessionTtlSeconds = 90 * 24 * 60 * 60
+  ): Promise<{ sessionId: string; token: IssuedSessionToken }> {
+    const allowedScopes = validateTokenPolicy(scopes, tokenTtlSeconds);
+    if (typeof publicKeyThumbprint !== "string" ||
+        !/^[A-Za-z0-9_-]{43}$/.test(publicKeyThumbprint) ||
+        !Number.isInteger(sessionTtlSeconds) || sessionTtlSeconds < 3600 ||
+        sessionTtlSeconds > 365 * 24 * 60 * 60) {
+      throw new Error("INVALID_ENROLLMENT_SESSION_POLICY");
+    }
+    const client = await this.pool.connect();
+    const sessionId = randomUUID();
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        `INSERT INTO installation_sessions
+           (session_id, public_key_jwk, public_key_thumbprint, status, expires_at)
+         VALUES ($1, $2::jsonb, $3, 'active', NOW() + ($4 * INTERVAL '1 second'))`,
+        [sessionId, JSON.stringify(publicKeyJwk), publicKeyThumbprint, sessionTtlSeconds]
+      );
+      const session = await client.query<{ expires_at: Date }>(
+        "SELECT expires_at FROM installation_sessions WHERE session_id = $1 FOR UPDATE",
+        [sessionId]
+      );
+      if (session.rowCount !== 1) throw new Error("ENROLLMENT_SESSION_CREATE_FAILED");
+      const token = await insertToken(client, sessionId, session.rows[0]!.expires_at, allowedScopes, tokenTtlSeconds);
+      await client.query("COMMIT");
+      return { sessionId, token };
+    } catch (error) {
+      await rollbackQuietly(client);
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
+
   /** Rotates all outstanding access credentials and issues one replacement atomically. */
   async rotate(
     sessionId: string,
