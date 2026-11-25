@@ -408,3 +408,11 @@
 - This remains a per-installation limiter only. Global provider spend ceilings, account-wide aggregation, enrollment abuse controls, edge/network throttling, and alerting remain open.
 - The chat route remains opt-in and is not registered in `main.ts`. No live provider key or public endpoint is configured. CortanaPoP still requires independent cryptographic review.
 - CI validation is pending for the new source, test, and documentation commits.
+## 004V-17 — first-install digital enrollment service (2026-11-26)
+
+- Added `backend/server/src/enrollment/enrollment-service.ts`: validates a public-only P-256 JWK, derives RFC 7638 thumbprint, consumes one-time enrollment challenge, verifies versioned ECDSA-SHA256 proof bound to POST `/v1/enroll`, challenge ID, nonce, and thumbprint.
+- Added `SessionTokenRepository.createEnrolledSession`: inserts installation identity and initial opaque session token within one PostgreSQL transaction. Token storage remains SHA-256 digest only; the unique active public-key index prevents duplicate active enrollment.
+- Added unit tests for valid enrollment, invalid proof, consumed/expired challenge, malformed payload, and private-key material rejection.
+- Added PostgreSQL integration tests for successful enrollment, token authentication/key binding, one-time challenge behavior, and duplicate active-key rejection.
+- Backend CI run #45710053822 passed typecheck, build, initial migration, idempotent migration check, and all unit/infrastructure/integration tests.
+- This is a service-level implementation only. No public enrollment HTTP route is registered or enabled. Enrollment throttling, deployment/attestation policy, abuse monitoring, and independent cryptographic review remain release gates.
