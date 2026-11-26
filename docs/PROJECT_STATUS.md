@@ -416,3 +416,11 @@
 - Added PostgreSQL integration tests for successful enrollment, token authentication/key binding, one-time challenge behavior, and duplicate active-key rejection.
 - Backend CI run #45710053822 passed typecheck, build, initial migration, idempotent migration check, and all unit/infrastructure/integration tests.
 - This is a service-level implementation only. No public enrollment HTTP route is registered or enabled. Enrollment throttling, deployment/attestation policy, abuse monitoring, and independent cryptographic review remain release gates.
+## 004V-18 — Android Keystore enrollment identity (2026-11-26)
+
+- Added `AndroidEnrollmentKeyProvider` in the RN 0.59.4 Android compatibility app. It creates an installation-specific P-256 ECDSA signing key in Android Keystore with signing-only purpose and SHA-256 digest; private key material is never exported.
+- Public identity returns P-256 JWK coordinates and RFC 7638 thumbprint. Challenge proof signs the same versioned canonical payload used by backend `EnrollmentService` and returns DER ECDSA signature as unpadded Base64URL.
+- Added React Native bridge methods `getEnrollmentPublicKey()` and `signEnrollmentChallenge(challengeId, nonce)`. API <23 fails closed for enrollment key generation.
+- Extended API 28 emulator smoke test to check public-key shape, stable thumbprint/coordinates across repeated calls, signature encoding, and invalid challenge input rejection.
+- Backend CI passed on commit `c9a51305b9e86fc24603699182db7ec321c03324`. RN 0.59.4 and Android probe workflows are still running at the time of this checkpoint; no emulator success is claimed yet.
+- This is a local key-provider and bridge milestone only. Full HTTP enrollment round trip, real device hardware-backed/attestation behavior, biometric/user-presence policy, and independent protocol/security review remain open. Enrollment is not publicly routed.
