@@ -44,6 +44,36 @@ const App = () => {
 
   cortanaBridge.onUserManualInput();
 
+  cortanaBridge.getEnrollmentPublicKey()
+    .then(identity => {
+      if (identity.kty !== 'EC' || identity.crv !== 'P-256' ||
+          !/^[A-Za-z0-9_-]{43}$/.test(identity.x) ||
+          !/^[A-Za-z0-9_-]{43}$/.test(identity.y) ||
+          !/^[A-Za-z0-9_-]{43}$/.test(identity.thumbprint)) {
+        throw new Error('INVALID_PUBLIC_IDENTITY');
+      }
+      console.log('CORTANA_ENROLLMENT_PUBLIC_KEY_OK');
+      return cortanaBridge.getEnrollmentPublicKey().then(second => {
+        if (second.thumbprint !== identity.thumbprint || second.x !== identity.x || second.y !== identity.y) {
+          throw new Error('KEY_IDENTITY_NOT_STABLE');
+        }
+        console.log('CORTANA_ENROLLMENT_KEY_PERSISTENCE_OK');
+        return cortanaBridge.signEnrollmentChallenge('AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA');
+      });
+    })
+    .then(signature => {
+      if (!/^[A-Za-z0-9_-]{80,100}$/.test(signature)) throw new Error('INVALID_SIGNATURE_ENCODING');
+      console.log('CORTANA_ENROLLMENT_SIGNATURE_OK');
+    })
+    .catch(error => console.log('CORTANA_ENROLLMENT_KEY_ERROR:' + error.code + ':' + error.message));
+
+  cortanaBridge.signEnrollmentChallenge('invalid', 'invalid')
+    .then(() => console.log('CORTANA_ENROLLMENT_INVALID_PROOF_UNEXPECTED_RESOLVE'))
+    .catch(error => {
+      if (error.code === 'E_ENROLLMENT_PROOF') console.log('CORTANA_ENROLLMENT_INPUT_VALIDATION_OK');
+      else console.log('CORTANA_ENROLLMENT_INPUT_VALIDATION_ERROR:' + error.code);
+    });
   const native = NativeModules.RN0594Probe;
   const events = new NativeEventEmitter(native);
   events.addListener('rn0594Probe', value => {
