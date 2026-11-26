@@ -99,3 +99,11 @@ without a configured endpoint:
 These checks prove registration and safe unconfigured behavior only. They do not
 validate a live HTTPS response, authentication, provider execution or cancellation
 against an active network request.
+
+### Android Keystore enrollment identity (004V-18; emulator validation pending)
+
+`AndroidEnrollmentKeyProvider` creates a per-installation ECDSA P-256 key pair in Android Keystore under alias `cortanagpt.enrollment.p256.v1`. The private key is non-exportable and has signing-only purpose with SHA-256 digest. The provider exposes only the public JWK coordinates and RFC 7638 thumbprint, and signs the versioned enrollment canonical payload using `SHA256withECDSA` (DER signature encoded as unpadded Base64URL) to match the backend verifier.
+
+`CortanaBridgeModule` exposes `getEnrollmentPublicKey()` and `signEnrollmentChallenge(challengeId, nonce)` to React Native. API levels below 23 fail closed because the enrollment key provider depends on Android Keystore EC key generation. This key is distinct from the AES local-memory key.
+
+The API 28 emulator smoke test now checks public JWK shape, stable identity across repeated calls, signature encoding, and invalid challenge rejection. Passing those checks validates the native bridge and key lifecycle on the emulator; it does not yet prove a full signed enrollment against a live backend. Device hardware-backed/StrongBox availability is not assumed, and attestation policy remains out of scope pending security review.
