@@ -1,0 +1,242 @@
+package com.cortanagpt.probe.bridge;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Platform-neutral adapter for the legacy NewmanViewModule text conversation surface.
+ * It maps only assistant text into view.displayText; skills/cards/voice remain unsupported.
+ */
+public final class LegacyConversationAdapter {
+    public interface SelectedMemoryProvider {
+        List<String> selectFor(String userText);
+    }
+
+    public interface Listener {
+        void onAssistantMessage(LegacyMessage message);
+        void onError(String errorCode);
+        void onCancelled();
+    }
+
+    /** Minimal legacy-compatible response shape consumed by the text display surface. */
+    public static final class LegacyMessage {
+        public final View view;
+        private LegacyMessage(String displayText) { this.view = new View(displayText); }
+        public static final class View {
+            public final String displayText;
+            private View(String displayText) { this.displayText = displayText; }
+        }
+    }
+
+    private final Object submissionLock = new Object();
+    private final Object lock = new Object();
+    private final BridgeCore bridge;
+    private final SelectedMemoryProvider memoryProvider;
+    private String conversationId;
+    private String activeRequestId;
+    private Listener activeListener;
+    private long generation;
+
+    public LegacyConversationAdapter(BridgeCore bridge, SelectedMemoryProvider memoryProvider) {
+        if (bridge == null) throw new IllegalArgumentException("MISSING_BRIDGE");
+        this.bridge = bridge;
+        this.memoryProvider = memoryProvider;
+    }
+
+    public void setConversationId(String conversationId) {
+        if (conversationId != null && (conversationId.length() == 0 || conversationId.length() > 128)) {
+            throw new IllegalArgumentException("INVALID_CONVERSATION_ID");
+        }
+        synchronized (submissionLock) {
+            synchronized (lock) {
+                if (activeRequestId != null) throw new IllegalStateException("REQUEST_ACTIVE");
+                this.conversationId = conversationId;
+            }
+        }
+    }
+
+    public String getConversationId() {
+        synchronized (lock) { return conversationId; }
+    }
+
+    public String getActiveRequestId() {
+        synchronized (lock) { return activeRequestId; }
+    }
+
+    /** NewmanViewModule.sendQuery adapter. Replaces and cancels any prior active text query. */
+    public String sendQuery(String text, Listener listener) {
+        if (listener == null) throw new IllegalArgumentException("MISSING_LISTENER");
+        if (text == null || text.trim().length() == 0 || text.length() > 16384) {
+            notifyError(listener, "INVALID_USER_INPUT");
+            return null;
+        }
+
+        List<String> selectedMemory = Collections.emptyList();
+        try {
+            if (memoryProvider != null) {
+                List<String> selected = memoryProvider.selectFor(text);
+                if (selected != null) selectedMemory = selected;
+            }
+        } catch (RuntimeException error) {
+            notifyError(listener, "MEMORY_SELECTION_FAILED");
+            return null;
+        }
+
+        final String requestId = UUID.randomUUID().toString();
+        PendingSubmission pending = null;
+        String submissionError = null;
+
+        synchronized (submissionLock) {
+            try {
+                synchronized (lock) {
+                    ChatRequest request = new ChatRequest(requestId, conversationId, text, selectedMemory);
+                    String previousId = activeRequestId;
+                    Listener previousListener = activeListener;
+                    activeRequestId = requestId;
+                    activeListener = listener;
+                    long requestGeneration = ++generation;
+                    pending = new PendingSubmission(request, previousId, previousListener, requestGeneration);
+                }
+            } catch (IllegalArgumentException error) {
+                submissionError = "INVALID_USER_INPUT";
+            }
+
+            if (pending != null) {
+                if (pending.previousId != null) bridge.cancel(pending.previousId);
+                final long requestGeneration = pending.generation;
+                try {
+                    bridge.submit(pending.request, new BridgeCore.Listener() {
+                        @Override public void onSuccess(ChatResponse response) {
+                            if (!claim(requestId, requestGeneration)) return;
+                            notifyMessage(listener, new LegacyMessage(response.getText()));
+                        }
+                        @Override public void onFailure(String errorCode) {
+                            if (!claim(requestId, requestGeneration)) return;
+                            notifyError(listener, errorCode);
+                        }
+                        @Override public void onCancelled() {
+                            if (!claim(requestId, requestGeneration)) return;
+                            notifyCancelled(listener);
+                        }
+                    });
+                } catch (RuntimeException error) {
+                    if (claim(requestId, requestGeneration)) submissionError = "CHAT_SUBMISSION_FAILED";
+                }
+            }
+        }
+
+        if (pending != null && pending.previousListener != null) {
+            notifyCancelled(pending.previousListener);
+        }
+        if (submissionError != null) {
+            notifyError(listener, submissionError);
+            return null;
+        }
+        return pending == null ? null : requestId;
+    }
+
+    /**
+     * NewmanViewModule.onUserManualInput is a focus notification from the text input.
+     * It does not submit a query; actual text submission uses sendQuery(text, ...).
+     */
+    public void onUserManualInput() {
+        // Intentionally no-op in the text-only bridge; retained as a lifecycle/UI hook.
+    }
+
+    /** NewmanViewModule.cancelListening adapter. A queued reply is discarded after cancellation. */
+    public boolean cancelListening() {
+        final String requestId;
+        final Listener listener;
+        synchronized (submissionLock) {
+            synchronized (lock) {
+                if (activeRequestId == null) return false;
+                requestId = activeRequestId;
+                listener = activeListener;
+                activeRequestId = null;
+                activeListener = null;
+                generation++;
+            }
+            bridge.cancel(requestId);
+        }
+        notifyCancelled(listener);
+        return true;
+    }
+
+    /** NewmanViewModule.resetConversation adapter; cancels pending text and clears conversation identity. */
+    public void resetConversation() {
+        final String requestId;
+        final Listener listener;
+        synchronized (submissionLock) {
+            synchronized (lock) {
+                requestId = activeRequestId;
+                listener = activeListener;
+                activeRequestId = null;
+                activeListener = null;
+                conversationId = null;
+                generation++;
+            }
+            if (requestId != null) bridge.cancel(requestId);
+        }
+        if (requestId != null) notifyCancelled(listener);
+    }
+
+    /** Legacy force-reset alias; it never reuses Microsoft connection or authentication state. */
+    public void forceResetConnection() { resetConversation(); }
+
+    /** Voice is intentionally outside the text-only MVP. */
+    public boolean startListening(Listener listener) {
+        notifyError(listener, "VOICE_INPUT_NOT_SUPPORTED");
+        return false;
+    }
+
+    /** Adaptive cards can carry actions; they are deliberately rejected in the MVP. */
+    public boolean onAdaptiveCardSubmit(Listener listener) {
+        notifyError(listener, "UNSUPPORTED_LEGACY_ACTION");
+        return false;
+    }
+
+    /** Legacy skills/actions are never forwarded to the new gateway. */
+    public boolean sendSkillEvent(Listener listener) {
+        notifyError(listener, "UNSUPPORTED_LEGACY_ACTION");
+        return false;
+    }
+
+    private boolean claim(String requestId, long requestGeneration) {
+        synchronized (lock) {
+            if (activeRequestId == null || !activeRequestId.equals(requestId)
+                    || generation != requestGeneration) return false;
+            activeRequestId = null;
+            activeListener = null;
+            return true;
+        }
+    }
+
+    private static void notifyMessage(Listener listener, LegacyMessage message) {
+        if (listener == null) return;
+        try { listener.onAssistantMessage(message); } catch (RuntimeException ignored) { }
+    }
+
+    private static void notifyError(Listener listener, String errorCode) {
+        if (listener == null) return;
+        try { listener.onError(errorCode); } catch (RuntimeException ignored) { }
+    }
+
+    private static void notifyCancelled(Listener listener) {
+        if (listener == null) return;
+        try { listener.onCancelled(); } catch (RuntimeException ignored) { }
+    }
+
+    private static final class PendingSubmission {
+        final ChatRequest request;
+        final String previousId;
+        final Listener previousListener;
+        final long generation;
+        PendingSubmission(ChatRequest request, String previousId, Listener previousListener, long generation) {
+            this.request = request;
+            this.previousId = previousId;
+            this.previousListener = previousListener;
+            this.generation = generation;
+        }
+    }
+}

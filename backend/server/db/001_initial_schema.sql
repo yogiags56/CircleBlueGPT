@@ -1,0 +1,55 @@
+-- Initial schema proposal. Apply only after protocol review.
+-- Challenge nonces are random, short-lived and single-use. Persist the value
+-- required to verify the client's signed challenge; never log it.
+CREATE TABLE IF NOT EXISTS installation_sessions (
+  session_id UUID PRIMARY KEY,
+  public_key_jwk JSONB NOT NULL,
+  public_key_thumbprint TEXT NOT NULL,
+  status TEXT NOT NULL CHECK (status IN ('active', 'revoked', 'expired')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL,
+  revoked_at TIMESTAMPTZ NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS installation_sessions_active_key_idx
+  ON installation_sessions (public_key_thumbprint) WHERE status = 'active';
+
+CREATE TABLE IF NOT EXISTS enrollment_challenges (
+  challenge_id TEXT PRIMARY KEY,
+  purpose TEXT NOT NULL CHECK (purpose IN ('enroll', 'rotate')),
+  nonce BYTEA NOT NULL,
+  session_id UUID NULL REFERENCES installation_sessions(session_id),
+  public_key_thumbprint TEXT NULL,
+  expires_at TIMESTAMPTZ NOT NULL,
+  consumed_at TIMESTAMPTZ NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CHECK ((purpose = 'enroll' AND session_id IS NULL) OR
+         (purpose = 'rotate' AND session_id IS NOT NULL))
+);
+
+CREATE INDEX IF NOT EXISTS enrollment_challenges_expiry_idx
+  ON enrollment_challenges (expires_at);
+
+CREATE TABLE IF NOT EXISTS session_tokens (
+  token_id UUID PRIMARY KEY,
+  session_id UUID NOT NULL REFERENCES installation_sessions(session_id),
+  token_hash BYTEA NOT NULL UNIQUE,
+  scopes TEXT[] NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMPTZ NOT NULL,
+  revoked_at TIMESTAMPTZ NULL
+);
+
+CREATE INDEX IF NOT EXISTS session_tokens_session_idx
+  ON session_tokens (session_id, expires_at);
+
+CREATE TABLE IF NOT EXISTS request_idempotency (
+  session_id UUID NOT NULL REFERENCES installation_sessions(session_id),
+  request_id TEXT NOT NULL,
+  body_sha256 BYTEA NOT NULL,
+  state TEXT NOT NULL CHECK (state IN ('accepted', 'running', 'completed', 'failed', 'cancelled')),
+  response_json JSONB NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (session_id, request_id)
+);

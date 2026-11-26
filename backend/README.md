@@ -1,0 +1,125 @@
+# Backend gateway — planned
+
+The backend is a required security boundary, not an optional proxy.
+
+Design references:
+
+- [Anonymous installation session protocol](ANONYMOUS_SESSION_PROTOCOL.md) — proposed enrollment, proof-of-possession, rotation and revocation contract.
+- [Threat model](THREAT_MODEL.md) — assets, trust boundaries, threats, mitigations and implementation gates.
+
+The custom CortanaPoP wire protocol remains a proposal, is not RFC 9449 DPoP, and has not undergone independent cryptographic review. The server scaffold now contains tested persistence/security primitives, but no public enrollment, authentication, rotation, revocation or chat endpoint is implemented or deployed. A route-independent verifier primitive and negative/positive test vectors now exist under `server/src/security/cortana-pop.ts`; this does not constitute protocol approval or public-route readiness.
+
+## Responsibilities
+
+- Anonymous installation enrollment and session lifecycle.
+- Short-lived scoped access tokens and revocation.
+- Request validation, quotas and abuse controls.
+- Durable idempotency for `(installation/session, requestId)`.
+- GPT provider adapter; provider secrets remain server-side.
+- Normalized response DTO matching the documented project contract.
+- Best-effort cancellation endpoint.
+- Redacted operational logs and metrics.
+
+## Proposed endpoints (not implemented)
+
+- `POST /v1/enrollment/challenges` — request a one-time enrollment or authenticated rotation challenge.
+- `POST /v1/sessions` — complete first-time enrollment.
+- `POST /v1/sessions/rotate` — rotate an existing authenticated session.
+- `POST /v1/chat/completions` — submit a conversation turn.
+- `DELETE /v1/requests/{requestId}` — request cancellation.
+- `DELETE /v1/sessions/current` — revoke the current session.
+
+## Required invariants
+
+1. A repeated idempotency key for the same session must not trigger a second billable model call.
+2. The response request ID must equal the client request ID.
+3. Cancellation is best effort and may race with completion; clients must deduplicate terminal events.
+4. Enforce body and output limits before allocating unbounded memory.
+5. Never expose provider credentials or internal stack traces to clients.
+
+No live backend, enrollment flow, provider configuration or production endpoint exists yet. Do not configure the Android client with a made-up URL.
+
+
+## Backend scaffold
+
+The first TypeScript/Fastify scaffold is under `server/`.
+
+- Node.js 22 and strict TypeScript configuration.
+- `GET /health/live` is a process liveness check.
+- `GET /health/ready` checks PostgreSQL and Redis independently and fails closed.
+- PostgreSQL initial schema proposal is in `server/db/001_initial_schema.sql`.
+- Local PostgreSQL and Redis services are defined in `server/docker-compose.yml`.
+- Automated tests cover config validation, health/readiness behavior, malformed/oversized bodies, PostgreSQL schema presence and Redis connectivity. CI provisions real PostgreSQL/Redis services and verifies migration idempotency.
+- GitHub Actions workflow `.github/workflows/backend-ci.yml` typechecks, tests and builds the backend.
+
+Local development:
+
+```sh
+cd backend/server
+cp .env.example .env
+docker compose up -d
+npm install
+npm run typecheck
+npm run build
+npm run migrate
+npm test
+npm run dev
+```
+
+The scaffold intentionally does not expose enrollment, chat, token issuance or provider routes yet. Implemented repository primitives include one-time enrollment challenge persistence, P-256 JWK/signature verification, Redis proof replay claims, durable idempotency, and a session-token repository that stores SHA-256 token hashes and supports guarded rotation/revocation. The session-token repository and its seven lifecycle tests passed in backend CI run `44897661183` (41/41 total tests). A follow-up CI run is validating the current naming/protocol documentation hardening. These are not route-level security controls and must not be exposed directly.
+
+The SQL file is an initial development migration, not a production migration approval. The custom CortanaPoP proof-of-possession protocol requires independent review before any public endpoint is wired to these primitives. Do not expose this development compose configuration to the public internet.
+
+
+## CortanaPoP verifier primitive (not a route)
+
+`server/src/security/cortana-pop.ts` implements the proposal's detached-signature canonicalization and P-256 verification over the exact raw body bytes, uppercase method, origin-form path+query, timestamp, proof ID and access-token hash. It rejects malformed targets, invalid timestamp windows, malformed IDs/tokens and invalid signatures. Unit tests use ephemeral test-only keys.
+
+This helper intentionally does not consume replay IDs, authenticate session tokens, authorize scopes, or establish a trusted request-body capture boundary. A future route must, in order: obtain the token and active session from the token repository; capture exact raw bytes and trusted origin-form target; call the verifier; atomically claim the proof ID in Redis; enforce scope and quotas; then enter the idempotency/provider pipeline. The exact order and canonicalization still require independent review and cross-language test vectors. Do not wire this helper to a public route yet.
+
+
+## Provider adapter boundary (implemented, not wired to a route)
+
+`server/src/provider/openai-compatible.ts` contains an injectable OpenAI-compatible chat provider adapter for the backend only. It accepts a configured HTTPS endpoint, server-side API key and model name; validates bounded message input; disables redirects; applies a request timeout; limits response bytes before JSON parsing; validates the assistant response shape; and maps upstream failures to stable internal error codes without forwarding provider diagnostics.
+
+The adapter is tested with an injected fake fetch implementation. No provider endpoint, model, key or deployment secret is committed. The adapter is not registered in Fastify, and no chat endpoint calls it. Before wiring it into a route, the backend still needs reviewed session/PoP authentication, scope enforcement, replay claim, quotas, durable idempotency orchestration, cancellation semantics, privacy/retention policy and provider spend controls.
+
+
+## Chat orchestration service (implemented, not exposed)
+
+`server/src/chat-service.ts` now composes the durable idempotency repository with the server-side provider adapter. It hashes the exact raw request bytes, creates or replays the per-session request record, inserts the server-controlled system persona instruction, rejects client-supplied system messages, calls the provider once, and stores a normalized completion response under the original request ID.
+
+Completed retries return the stored response without another provider call. Requests already accepted/running return an in-progress result; failed/cancelled records are not automatically retried. If provider execution fails, the record is marked failed. If the provider succeeds but persisting its response fails, the record is deliberately left running and the service returns a normalized persistence error—this avoids an automatic second billable call, but requires a future recovery/reconciliation workflow.
+
+This is a service layer only. It is not registered as a Fastify route. No HTTP raw-body parser, duplicate-header adapter, session guard composition, quota enforcement, cancellation endpoint, or live provider configuration has been connected.
+
+
+## Opt-in chat HTTP adapter (not enabled in the server)
+
+`server/src/chat-route.ts` provides a Fastify `POST /v1/chat/completions` adapter and installs a raw-buffer JSON parser so the CortanaPoP verifier receives the exact request bytes. It rejects duplicate security-sensitive headers, malformed/unknown JSON fields, client-supplied system roles, invalid request IDs, and invalid request targets before calling the chat service. It invokes the injected authentication guard with the raw body and trusted origin-form request target, requires `chat:send`, and maps authentication, idempotency, provider and persistence outcomes to stable HTTP responses.
+
+The route is intentionally not registered by `buildApp` or `main`. It is an opt-in adapter for isolated tests and later reviewed integration. No production provider key, route activation, enrollment endpoint, quota policy, or public deployment is configured. The caller must supply the real `SessionTokenRepository`, `ProofReplayStore`, and `ChatCompletionService` dependencies only after the protocol and operational controls have passed independent review.
+
+
+## Explicit chat subsystem composition (004V-14; opt-in only)
+
+`server/src/chat-subsystem.ts` is the composition root for the chat path. It constructs the PostgreSQL session-token and idempotency repositories, Redis proof replay store, HTTPS-only OpenAI-compatible provider, chat orchestration service, and authenticated Fastify route from injected infrastructure and explicit persona/provider policy.
+
+The composition function validates that the server-owned Cortana persona instruction is non-empty and bounded, that the output-token limit is bounded, and that provider endpoint/key/model configuration passes the provider's HTTPS and secret-shape checks. Unit tests cover those fail-fast configuration boundaries.
+
+This is deliberately not called from `main.ts` and does not enable a production endpoint. There is still no enrollment/issuance route, no environment-secret wiring for the provider, no independent CortanaPoP review, and no end-to-end test using a real signed installation session. The next safe step is integration testing the composition root with ephemeral PostgreSQL/Redis and deterministic local provider mocks, then a separate security review before any route activation.
+
+## Per-installation chat rate limiting (004V-16; opt-in composition)
+
+`server/src/security/chat-rate-limit-store.ts` implements an atomic Redis fixed-window counter keyed by a SHA-256 digest of the authenticated installation session ID. The Lua script combines INCR and first-hit EXPIRE atomically, avoiding races between concurrent requests.
+
+The opt-in chat composition wires the limiter into the authenticated route with a default policy of 20 requests per installation per 60-second window. The policy can be lowered or raised explicitly through `rateLimitRequestsPerMinute` (bounded to 1–1000). The route emits standard operational headers (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`), returns HTTP 429 with `Retry-After` when exceeded, and fails closed with HTTP 503 if Redis cannot enforce the policy.
+
+The rate-limit store and route behavior have dedicated tests for boundary, concurrent consumption, session isolation, rejection, and unavailable-store behavior. This is a per-installation protection layer, not a complete abuse/cost policy: global provider budget ceilings, account-level aggregation, enrollment throttling, IP/network edge controls, and operational alerting remain release requirements.
+## First-install enrollment service (004V-17; not publicly routed)
+
+`server/src/enrollment/enrollment-service.ts` verifies a one-time P-256 proof for first installation. The signed canonical payload is versioned and binds the HTTP method, fixed enrollment path, challenge ID, 32-byte nonce, and RFC 7638 public-key thumbprint. The challenge repository atomically consumes a live enrollment challenge before signature verification; a failed proof therefore burns that challenge and cannot be retried.
+
+After successful verification, `SessionTokenRepository.createEnrolledSession` creates the installation identity and its initial opaque token in one PostgreSQL transaction. Only the public P-256 JWK and its thumbprint are persisted; the private key remains on the Android installation. The database's active-key unique index prevents duplicate active identities.
+
+The service is currently exercised directly by unit and PostgreSQL integration tests. It is intentionally not registered as a public HTTP endpoint: enrollment request throttling, deployment/attestation policy, abuse monitoring, and independent cryptographic review are still required before route activation.

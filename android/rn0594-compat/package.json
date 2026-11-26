@@ -1,0 +1,17 @@
+{
+  "name": "cortana-rn0594-compat",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Isolated React Native 0.59.4 compatibility shell for CortanaGPT",
+  "dependencies": {
+    "react": "16.8.3",
+    "react-native": "0.59.4"
+  },
+  "resolutions": {
+    "metro-react-native-babel-preset": "0.59.0"
+  },
+  "devDependencies": {
+    "@babel/core": "7.16.5",
+    "metro-react-native-babel-preset": "0.59.0"
+  }
+}

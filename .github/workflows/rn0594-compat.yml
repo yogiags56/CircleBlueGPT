@@ -1,0 +1,126 @@
+name: React Native 0.59.4 compatibility shell
+
+on:
+  pull_request:
+    paths:
+      - "android/rn0594-compat/**"
+      - ".github/workflows/rn0594-compat.yml"
+  push:
+    branches:
+      - "stage-004r/**"
+    paths:
+      - "android/rn0594-compat/**"
+      - ".github/workflows/rn0594-compat.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  legacy-android:
+    name: Build and launch RN 0.59.4 shell
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 for Android SDK tools
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Node 16 for legacy Metro
+        uses: actions/setup-node@v4
+        with:
+          node-version: "16.20.2"
+
+      - name: Install Yarn 1
+        run: npm install --global yarn@1.22.22
+
+      - name: Set up Gradle 4.10.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "4.10.1"
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v4
+
+      - name: Install legacy Android SDK packages
+        run: sdkmanager "platforms;android-28" "build-tools;28.0.3" "platform-tools"
+
+      - name: Switch to JDK 8 for legacy Gradle
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "8"
+
+      - name: Install legacy JavaScript dependencies with Babel resolutions
+        working-directory: android/rn0594-compat
+        run: yarn install --frozen-lockfile --ignore-scripts --non-interactive --no-progress --ignore-engines
+
+      - name: Commit generated Yarn lockfile
+        working-directory: .
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add android/rn0594-compat/yarn.lock
+          if ! git diff --cached --quiet; then
+            git commit -m "build: lock RN 0.59.4 dependency graph"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+
+      - name: Verify resolved Yarn lockfile
+        working-directory: android/rn0594-compat
+        run: test -s yarn.lock
+
+      - name: Upload resolved Yarn lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: cortana-rn0594-yarn-lock
+          path: android/rn0594-compat/yarn.lock
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Generate compatibility JS bundle
+        working-directory: android/rn0594-compat
+        run: |
+          mkdir -p app/src/main/assets
+          node node_modules/react-native/local-cli/cli.js bundle --platform android --dev false --entry-file index.js --bundle-output app/src/main/assets/index.android.bundle --assets-dest app/src/main/res/
+
+      - name: Assemble compatibility APK
+        working-directory: android/rn0594-compat
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Switch to JDK 17 for emulator and SDK tools
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Launch on API 28 emulator and verify bridge
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          ANDROID_I_WANT_MY_TCG: "yes"
+        with:
+          api-level: 28
+          target: default
+          arch: x86
+          profile: pixel_2
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          disable-animations: true
+          script: >-
+            adb logcat -c &&
+            adb install android/rn0594-compat/app/build/outputs/apk/debug/app-debug.apk &&
+            adb shell am start -n com.cortanagpt.rn0594compat/.MainActivity &&
+            for i in $(seq 1 60); do logs="$(adb logcat -d -s ReactNativeJS:V)"; if echo "$logs" | grep -q "RN0594_NATIVE_VERSION_OK" && echo "$logs" | grep -q "RN0594_NATIVE_PROMISE_OK:native-module-ready" && echo "$logs" | grep -q "RN0594_NATIVE_PROMISE_REJECT_OK" && echo "$logs" | grep -q "RN0594_EVENT_OK:event-ready" && echo "$logs" | grep -q "CORTANA_BRIDGE_MODULE_OK:endpoint-not-configured" && echo "$logs" | grep -q "CORTANA_BRIDGE_FAIL_CLOSED_OK" && echo "$logs" | grep -q "CORTANA_BRIDGE_CANCEL_IDLE_OK:false" && echo "$logs" | grep -q "CORTANA_BRIDGE_RESET_IDLE_OK" && echo "$logs" | grep -q "CORTANA_ENROLLMENT_PUBLIC_KEY_OK" && echo "$logs" | grep -q "CORTANA_ENROLLMENT_KEY_PERSISTENCE_OK" && echo "$logs" | grep -q "CORTANA_ENROLLMENT_SIGNATURE_OK" && echo "$logs" | grep -q "CORTANA_ENROLLMENT_INPUT_VALIDATION_OK"; then echo "$logs"; exit 0; fi; sleep 2; done; echo "RN0594 bridge markers missing; dumping Android runtime diagnostics"; adb logcat -d -b all -v time | grep -E "FATAL EXCEPTION|AndroidRuntime|ReactNative|SoLoader|UnsatisfiedLinkError|Unable to load script|Could not connect|RN0594" || true; adb shell dumpsys activity activities | grep -E "mResumedActivity|topResumedActivity" || true; exit 1
+
+      - name: Upload compatibility APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: cortana-rn0594-compat-apk
+          path: android/rn0594-compat/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+          retention-days: 14

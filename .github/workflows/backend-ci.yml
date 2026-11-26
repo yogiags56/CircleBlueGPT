@@ -1,0 +1,82 @@
+name: CortanaGPT backend CI
+
+on:
+  pull_request:
+    paths:
+      - "backend/server/**"
+      - ".github/workflows/backend-ci.yml"
+  push:
+    branches:
+      - main
+      - "stage-004r/**"
+    paths:
+      - "backend/server/**"
+      - ".github/workflows/backend-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Typecheck, migrate, integration test and build backend
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: cortanagpt
+          POSTGRES_USER: cortanagpt
+          POSTGRES_PASSWORD: cortanagpt_ci_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cortanagpt -d cortanagpt"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://cortanagpt:cortanagpt_ci_only@127.0.0.1:5432/cortanagpt
+      REDIS_URL: redis://127.0.0.1:6379
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        working-directory: backend/server
+        run: npm install --no-audit --no-fund
+
+      - name: Typecheck
+        working-directory: backend/server
+        run: npm run typecheck
+
+      - name: Build
+        working-directory: backend/server
+        run: npm run build
+
+      - name: Apply database migrations
+        working-directory: backend/server
+        run: npm run migrate
+
+      - name: Verify migrations are idempotent
+        working-directory: backend/server
+        run: npm run migrate
+
+      - name: Run unit and infrastructure integration tests
+        working-directory: backend/server
+        run: npm test
