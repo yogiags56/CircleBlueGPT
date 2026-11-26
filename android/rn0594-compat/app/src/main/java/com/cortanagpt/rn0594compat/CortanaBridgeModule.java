@@ -1,6 +1,7 @@
 package com.cortanagpt.rn0594compat;
 
 import com.cortanagpt.probe.bridge.AndroidBridgeRuntime;
+import com.cortanagpt.probe.bridge.AndroidEnrollmentKeyProvider;
 import com.cortanagpt.probe.bridge.LegacyConversationAdapter;
 import android.net.Uri;
 
@@ -10,6 +11,7 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.WritableNativeMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 /**
@@ -33,6 +35,33 @@ public final class CortanaBridgeModule extends ReactContextBaseJavaModule {
 
     @Override public String getName() { return "CortanaBridge"; }
 
+    /** Returns only the installation's public P-256 identity; private key never leaves Keystore. */
+    @ReactMethod public void getEnrollmentPublicKey(Promise promise) {
+        try {
+            AndroidEnrollmentKeyProvider.PublicIdentity identity =
+                    new AndroidEnrollmentKeyProvider().getOrCreatePublicIdentity();
+            WritableMap result = Arguments.createMap();
+            result.putString("kty", "EC");
+            result.putString("crv", "P-256");
+            result.putString("x", identity.x);
+            result.putString("y", identity.y);
+            result.putString("thumbprint", identity.thumbprint);
+            promise.resolve(result);
+        } catch (Exception error) {
+            promise.reject("E_ENROLLMENT_KEY", safeMessage(error));
+        }
+    }
+
+    /** Signs a backend challenge without exporting the Android Keystore private key. */
+    @ReactMethod public void signEnrollmentChallenge(String challengeId, String nonce, Promise promise) {
+        try {
+            String signature = new AndroidEnrollmentKeyProvider()
+                    .signEnrollmentChallenge(challengeId, nonce);
+            promise.resolve(signature);
+        } catch (Exception error) {
+            promise.reject("E_ENROLLMENT_PROOF", safeMessage(error));
+        }
+    }
     @ReactMethod public void getBridgeStatus(Promise promise) {
         promise.resolve(isEndpointConfigured() ? "endpoint-configured" : "endpoint-not-configured");
     }
